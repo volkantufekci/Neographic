@@ -33,8 +33,8 @@ def graduated_with_me(student)
                                  "return filter" => {
                                      "language" => "javascript",
                                      "body" => "position.length() == 1
-                                                       && position.endNode().getId() != #{student} 
-                                                       && position.lastRelationship().getProperty(\"graduated\") == #{graduated};"}})
+                                          && position.endNode().getId() != #{student}
+                                          && position.lastRelationship().getProperty(\"graduated\") == #{graduated};"}})
 end
 
 charlie = create_node("Charlie", 1)

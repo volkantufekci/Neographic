@@ -39,4 +39,17 @@ class IrbdeDenenler
   outs.each {|n| puts n.title}
   node2=outs.first
 
+# CYPHER
+  node1Hash = @neo.execute_query("start n=node(1) return n")
+  puts "Node data: #{ node1Hash["data"][0][0]["data"] }"
+  puts "keys: #{node1Hash["data"][0][0].keys}"
+
+#GREMLIN
+  gremlin = @neo.execute_script("g.v(2).out('Link').title")
+
+  #timeout aliyor
+  #gremlin = @neo.execute_script("g.v(2).outE.inV.loop(2){it.loops < 3}")
+
+  @neo.execute_script("g.v(2).out.out.id").length
+
 end
