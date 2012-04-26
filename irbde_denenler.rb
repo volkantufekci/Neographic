@@ -51,5 +51,9 @@ class IrbdeDenenler
   #gremlin = @neo.execute_script("g.v(2).outE.inV.loop(2){it.loops < 3}")
 
   @neo.execute_script("g.v(2).out.out.id").length
+  
+  #7475'te breadth-first icin yaratilmis graphta denendi
+  #loop icinde node tekrari yapmadan, ara asamalardaki node'lari da basar
+  #g.v(30).out.except(x).aggregate(x).loop(3){it.loops < 3}{true}.name
 
 end
