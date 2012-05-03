@@ -5,7 +5,7 @@ class IrbdeDenenler
 
   @neo = Neography::Rest.new({:protocol => 'http://',
                               :server => 'ec2-107-22-214-211.compute-1.amazonaws.com',
-                              :port => 7474,
+                              :port => 7475,
                               :directory => '',  # use '/<my directory>' or leave out for default
                               :authentication => '', # 'basic', 'digest' or leave out for default
                               :username => '', #leave out for default
@@ -54,6 +54,8 @@ class IrbdeDenenler
   
   #7475'te breadth-first icin yaratilmis graphta denendi
   #loop icinde node tekrari yapmadan, ara asamalardaki node'lari da basar
-  #g.v(30).out.except(x).aggregate(x).loop(3){it.loops < 3}{true}.name
+  # result = @neo.execute_script("x=[]; g.v(30).out.except(x).aggregate(x).loop(3){it.loops < 3}{true}.name")
+
+  for i in 1..7 do a=[]; a << @neo.execute_script("g.V[#{i}].out.id"); h["#{i}"]=a end
 
 end
