@@ -61,4 +61,5 @@ class IrbdeDenenler
   @neo.execute_script("g.V[0].id")
   @neo.execute_script("g.v(30).id")
 
+
 end
