@@ -58,4 +58,7 @@ class IrbdeDenenler
 
   for i in 1..7 do a=[]; a << @neo.execute_script("g.V[#{i}].out.id"); h["#{i}"]=a end
 
+  @neo.execute_script("g.V[0].id")
+  @neo.execute_script("g.v(30).id")
+
 end
