@@ -37,6 +37,8 @@ class IrbdeDenenler
       puts key
     end
 
+    #g.idx("globalidindex")[[global_id:"1"]]
+
     #puts @neo.execute_script("g.V[0].id")
     #puts @neo.execute_script("g.v(30).id")
   end
