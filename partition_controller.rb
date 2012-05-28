@@ -84,14 +84,14 @@ module Tez
 
       # @param [Neography::Rest] neo4j
       def preload_neo4j (neo4j)
-        a = Neography::Node.create({:title => "a"}, neo4j)
-        b = Neography::Node.create({:title => "b"}, neo4j)
-        c = Neography::Node.create({:title => "c"}, neo4j)
-        d = Neography::Node.create({:title => "d"}, neo4j)
-        e = Neography::Node.create({:title => "e"}, neo4j)
-        f = Neography::Node.create({:title => "f"}, neo4j)
-        g = Neography::Node.create({:title => "g"}, neo4j)
-        h = Neography::Node.create({:title => "h"}, neo4j)
+        a = create_real_node_in_partition({:title => "a"}, neo4j)
+        b = create_real_node_in_partition({:title => "b"}, neo4j)
+        c = create_real_node_in_partition({:title => "c"}, neo4j)
+        d = create_real_node_in_partition({:title => "d"}, neo4j)
+        e = create_real_node_in_partition({:title => "e"}, neo4j)
+        f = create_real_node_in_partition({:title => "f"}, neo4j)
+        g = create_real_node_in_partition({:title => "g"}, neo4j)
+        h = create_real_node_in_partition({:title => "h"}, neo4j)
         #Relationships
         Neography::Relationship.create(:knows, a, b)
         Neography::Relationship.create(:knows, a, c)
@@ -110,24 +110,57 @@ module Tez
           properties[:global_id] = RedisConnector.new_global_id
           RedisConnector.create_partition_list_for_node(properties[:global_id], partition.port)
         end
-        Neography::Node.create(properties, partition)
+        new_node = Neography::Node.create(properties, partition)
+        add_node_to_globalid_index(new_node, partition)
       end
 
       def move_node_to_partition(node, partition_port)
+        target_partition = neo4j_instances[partition_port]
+
         # redis'ten target partitionda global_id'li node var miya bak
         partitions_have_the_node = RedisConnector.partitions_have_the_node(node.global_id)
 
         if partitions_have_the_node.empty?
           #TODO ERROR every node should at least have a partition
-        elsif partitions_have_the_node.index(partition_port)
-          #TODO eger varsa shadow var demek, yeni node yaratma
+        elsif partitions_have_the_node.index(partition_port.to_s)
+          # There is shadow node, copy properties of real node to this shadow node
+          shadow_node = get_node_from_globalid_index(node.global_id, target_partition)
+          shadow_node_id = shadow_node["self"].split('/').last
+          puts "shadow_node_id=#{shadow_node_id}"
+
+          puts "set node's properties to shadow node in the target partition"
+          target_partition.set_node_properties(shadow_node, node.marshal_dump)
+
         else
-          ## eger yoksa ayni global_idli yeni node yarat
-          create_real_node_in_partition(node.marshal_dump, neo4j_instances[partition_port])
+          # There is no shadow node in target_part, so create new real node
+          create_real_node_in_partition(node.marshal_dump, target_partition)
         end
+
+      end
+
+      def add_node_to_globalid_index(node, partition)
+        partition.add_node_to_index(:globalidindex, :global_id, node.global_id, node)
+      end
+
+      def get_node_from_globalid_index(global_id_value, partition)
+        array = partition.get_node_index(:globalidindex, :global_id, global_id_value)
+        if array.empty?
+          # node, indexe eklenmemis
+        else
+          #node_id = array.first["self"].split('/').last
+          node = array.first
+        end
+      end
+
+      def test_move_node_to_partition
+        n2_8474 = Neography::Node.load(@neo2, 2)
+        move_node_to_partition(n2_8474, 7474)
 
       end
 
     end
 end
 
+
+#pc = Tez::PartitionController.new
+#pc.test_move_node_to_partition
