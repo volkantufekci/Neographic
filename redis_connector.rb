@@ -5,6 +5,7 @@ module RedisModul
   class RedisConnector
 
     @redis = Redis.new
+    @log = Logger.new(STDOUT)
 
     def self.new_global_id
       @redis.incr :global_neo4j_id
@@ -20,6 +21,11 @@ module RedisModul
 
     def self.create_partition_list_for_node(node_global_id, port)
       @redis.lpush node_global_id, port
+      end
+
+    def self.add_to_partition_list_for_node(node_global_id, port)
+      result = self.create_partition_list_for_node(node_global_id, port)
+      log.info("add_to_partition_list_for_node( #{node_global_id}, #{port}) => #{result}")
     end
 
     def self.remove_all
