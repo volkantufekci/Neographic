@@ -13,22 +13,23 @@ module Tez
 
       def initialize
         initialize_neo4j_instances
+        @log = Logger.new(STDOUT)
       end
 
       def process_nodes_after_shadowing
 
       end
 
-      def delete_relation_to_shadows_for_node (node, rel_type=nil)
+      def del_rels_to_shadows_for_node (node)
+        #noinspection RubyResolve
         # Collect relations to shadow node
-        rels_to_shadow_nodes = n4.rels.both.find_all {|rel| rel.start_node.shadow && rel.end_node.shadow }
+        rels_to_shadow_nodes = node.rels.both.find_all {|rel| rel.start_node.shadow && rel.end_node.shadow }
         # And... Remove them
         rels_to_shadow_nodes.each { |rel| rel.del }
       end
 
       def has_any_relation? (node)
-        result = false
-        result = true if node.rels.size > 0
+        node.rels.size > 0
       end
 
       def delete_node (node)
@@ -49,16 +50,15 @@ module Tez
         end
       end
 
+      # @param [Neography::Node] node
       def make_node_shadow (node)
+        #noinspection RubyResolve
         node.shadow = true
       end
 
       def make_node_unshadow (node)
+        #noinspection RubyResolve
         node.shadow = nil
-      end
-
-      def load_node_in_partition(g)
-
       end
 
       def initialize_neo4j_instances
@@ -105,30 +105,37 @@ module Tez
       end
 
       def create_real_node_in_partition(properties, partition)
-        #if properties include global_id that means this is a move process
+        #if properties include global_id that means this is a migrate process
         unless properties[:global_id]
-          properties[:global_id] = RedisConnector.new_global_id
-          RedisConnector.create_partition_list_for_node(properties[:global_id], partition.port)
+          global_id = RedisConnector.new_global_id
+          properties[:global_id] = global_id
+          RedisConnector.create_partition_list_for_node(global_id, partition.port)
+          @log.info("new global id created: #{global_id}")
         end
+
         new_node = Neography::Node.create(properties, partition)
+        @log.info("Node(#{new_node.neo_id}) with global_id: #{properties[:global_id]} created in partition with port: #{partition.port}")
         add_node_to_globalid_index(new_node, partition)
+        return new_node
       end
 
-      def move_node_to_partition(node, partition_port)
+      def migrate_node_to_partition(node, partition_port)
         target_partition = neo4j_instances[partition_port]
 
         # redis'ten target partitionda global_id'li node var miya bak
+        #noinspection RubyResolve
         partitions_have_the_node = RedisConnector.partitions_have_the_node(node.global_id)
 
         if partitions_have_the_node.empty?
-          #TODO ERROR every node should at least have a partition
+          @log.error("every node should at least have a partition")
         elsif partitions_have_the_node.index(partition_port.to_s)
           # There is shadow node, copy properties of real node to this shadow node
           shadow_node = get_node_from_globalid_index(node.global_id, target_partition)
           shadow_node_id = shadow_node["self"].split('/').last
-          puts "shadow_node_id=#{shadow_node_id}"
 
-          puts "set node's properties to shadow node in the target partition"
+          @log.info("shadow_node_id=#{shadow_node_id}")
+          @log.info("set node's properties to shadow node in the target partition")
+
           target_partition.set_node_properties(shadow_node, node.marshal_dump)
 
         else
@@ -139,6 +146,7 @@ module Tez
       end
 
       def add_node_to_globalid_index(node, partition)
+        #noinspection RubyResolve
         partition.add_node_to_index(:globalidindex, :global_id, node.global_id, node)
       end
 
@@ -152,15 +160,50 @@ module Tez
         end
       end
 
+      def migrate_incoming_rels_of_node(node_global_id, from_partition, to_partition)
+
+        end_node_from_partition = get_node_from_globalid_index( node_global_id, from_partition )
+        end_node_to_partition   = get_node_from_globalid_index( node_global_id, to_partition )
+
+        #rels_in_from_partition = from_partition.get_node_relationships(end_node_from_partition, "in")
+        end_node_from_partition = Neography::Node.load(from_partition, end_node_from_partition["self"].split('/').last)
+        rels_in_from_partition = end_node_from_partition.rels.incoming
+            rels_in_from_partition.each { |rel|
+          migrate_incoming_rel(rel, from_partition, to_partition, end_node_to_partition)
+        }
+      end
+
+      def migrate_incoming_rel( rel, from_partition, to_partition, end_node )
+        start_node_from_partition = rel.start_node
+        start_node_to_partition =
+            get_node_from_globalid_index( start_node_from_partition.global_id, to_partition )
+
+        #new_rel =
+        #    to_partition.create_relationship(rel["type"], start_node_to_partition, end_node)
+        new_rel =
+            to_partition.create_relationship(rel.rel_type, start_node_to_partition, end_node)
+
+        to_partition.set_relationship_properties(new_rel, from_partition.get_relationship_properties(rel))
+      end
+
       def test_move_node_to_partition
         n2_8474 = Neography::Node.load(@neo2, 2)
-        move_node_to_partition(n2_8474, 7474)
+        migrate_node_to_partition(n2_8474, 7474)
 
+        n1_8474 = Neography::Node.load(@neo2, 1)
+        migrate_node_to_partition(n1_8474, 7474)
+      end
+
+      def test_migrate_incoming_rels_of_node
+        migrate_incoming_rels_of_node( 23, @neo2, @neo1)
       end
 
     end
 end
 
 
-#pc = Tez::PartitionController.new
+pc = Tez::PartitionController.new
+#pc.preload_neo4j(pc.neo2)
 #pc.test_move_node_to_partition
+
+pc.test_migrate_incoming_rels_of_node
