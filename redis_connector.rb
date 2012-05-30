@@ -22,6 +22,10 @@ module RedisModul
       @redis.lpush node_global_id, port
     end
 
+    def self.remove_all
+      @redis.flushall
+    end
+
   end
 
 end
