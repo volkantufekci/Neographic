@@ -83,15 +83,18 @@ module Tez
         g = create_real_node_in_partition({:title => "g"}, neo4j)
         h = create_real_node_in_partition({:title => "h"}, neo4j)
         #Relationships
-        Neography::Relationship.create(:knows, a, b)
-        Neography::Relationship.create(:knows, a, c)
-        Neography::Relationship.create(:knows, b, c)
-        Neography::Relationship.create(:knows, b, d)
-        Neography::Relationship.create(:knows, b, e)
-        Neography::Relationship.create(:knows, c, e)
-        Neography::Relationship.create(:knows, c, g)
-        Neography::Relationship.create(:knows, c, h)
-        Neography::Relationship.create(:knows, e, f)
+        neo4j.create_node_index(:knows)
+        #Neography::Relationship.create(:knows, a, b)
+        neo4j.create_unique_relationship(:knows, a.global_id, b.global_id, :knows, a, b)
+        neo4j.create_unique_relationship(:knows, a.global_id, c.global_id, :knows, a, c)
+        neo4j.create_unique_relationship(:knows, b.global_id, c.global_id, :knows, b, c)
+        neo4j.create_unique_relationship(:knows, b.global_id, d.global_id, :knows, b, d)
+        neo4j.create_unique_relationship(:knows, b.global_id, e.global_id, :knows, b, e)
+        neo4j.create_unique_relationship(:knows, c.global_id, e.global_id, :knows, c, e)
+        neo4j.create_unique_relationship(:knows, c.global_id, g.global_id, :knows, c, g)
+        neo4j.create_unique_relationship(:knows, c.global_id, h.global_id, :knows, c, h)
+        neo4j.create_unique_relationship(:knows, e.global_id, f.global_id, :knows, e, f)
+
       end
 
       def migrate_node_to_partition(old_real_node, port)
@@ -151,14 +154,12 @@ module Tez
       end
 
       def get_indexed_node_from_partition(global_id_value, partition)
-        @log.info("get_indexed_node_from_partition(#{global_id_value}, #{partition.port})")
+        @log.info("get_indexed_node_from_partition(gid:#{global_id_value}, port:#{partition.port})")
         array = partition.get_node_index(:globalidindex, :global_id, global_id_value)
         if array.nil?
-          # node, indexe eklenmemis
-          @log.info("Partition #{partition.port} has not an index with value #{global_id_value}")
+          @log.info("Partition #{partition.port} does not have a node with gid: #{global_id_value}")
           node = nil
         else
-          #node_id = array.first["self"].split('/').last
           node = array.first
         end
 
@@ -174,11 +175,11 @@ module Tez
 
         case direction
           when :incoming
-            migrate_incomin_relations(from_partition, source_end_node, target_node_hash, to_partition)
+            migrate_incoming_relations(from_partition, source_end_node, target_node_hash, to_partition)
           when :outgoing
             migrate_outgoing_relations(from_partition, source_end_node, target_node_hash, to_partition)
           else
-            migrate_incomin_relations(from_partition, source_end_node, target_node_hash, to_partition)
+            migrate_incoming_relations(from_partition, source_end_node, target_node_hash, to_partition)
             migrate_outgoing_relations(from_partition, source_end_node, target_node_hash, to_partition)
         end
 
@@ -191,37 +192,88 @@ module Tez
         }
       end
 
-      def migrate_incomin_relations(from_partition, source_end_node, target_node_hash, to_partition)
+      def migrate_incoming_relations(from_partition, source_end_node, target_node_hash, to_partition)
         rels_in_from_partition = source_end_node.rels.incoming
         rels_in_from_partition.each { |rel|
           migrate_relation(rel, from_partition, to_partition, target_node_hash, :incoming)
         }
       end
 
-      def migrate_relation(rel, from_partition, to_partition, node, direction)
+      def migrate_relation(rel, from_partition, to_partition, node_hash, direction)
+        source_other_node      = other_node_of_rel(rel, direction)
+        target_other_node_hash = get_indexed_node_from_partition( source_other_node.global_id, to_partition )
+
+        rel_exists = false
+        if target_other_node_hash.nil?
+          target_other_node_hash = create_shadow_node_hash(source_other_node, to_partition)
+        else
+          rel_exists = rel_exists?(rel, node_hash, target_other_node_hash, to_partition, direction)
+        end
+
+        unless rel_exists
+          case direction
+            when :incoming
+              #new_rel = partition.create_relationship(rel_in_source["type"], start_node_to_partition, end_node)
+              #new_rel = to_partition.create_relationship(rel.rel_type, target_other_node_hash, node_hash)
+              new_rel =
+                  to_partition.create_unique_relationship(rel.rel_type,
+                                                          target_other_node_hash["data"]["global_id"],
+                                                          node_hash["data"]["global_id"],
+                                                          rel.rel_type,
+                                                          target_other_node_hash, node_hash)
+              log_relation_migration(node_hash, rel, target_other_node_hash)
+            when :outgoing
+              #new_rel = to_partition.create_relationship(rel.rel_type, node_hash, target_other_node_hash)
+              new_rel =
+                  to_partition.create_unique_relationship(rel.rel_type,
+                                                          node_hash["data"]["global_id"],
+                                                          target_other_node_hash["data"]["global_id"],
+                                                          rel.rel_type,
+                                                          node_hash, target_other_node_hash)
+              log_relation_migration(target_other_node_hash, rel, node_hash)
+            else
+              @log.error("direction:#{direction} other than :incoming or :outgoing!")
+              new_rel = nil
+          end
+
+          inject_properties(rel, new_rel, from_partition, to_partition) unless new_rel
+        end
+      end
+
+      def log_relation_migration(node_hash, rel, target_other_node_hash)
+        other_node_title = target_other_node_hash["data"]["title"]
+        node_title = node_hash["data"]["title"]
+        @log.info("#{other_node_title} =>#{rel.rel_type}=> #{node_title} created")
+      end
+
+      def inject_properties(rel, new_rel, from_partition, to_partition)
+        properties = from_partition.get_relationship_properties(rel)
+        to_partition.set_relationship_properties(new_rel, properties) unless properties.nil?
+      end
+
+      def other_node_of_rel(rel, direction)
         case direction
           when :incoming
             source_other_node = rel.start_node
           else
             source_other_node = rel.end_node
         end
+        source_other_node
+      end
 
-        target_other_node_hash = get_indexed_node_from_partition( source_other_node.global_id, to_partition )
+      def rel_exists?(rel_in_source, node_hash, target_other_node_hash, to_partition, direction)
+        #checks the relation index on the target partition if there exist a relation that we want to migrate
 
-        if target_other_node_hash.nil?
-          target_other_node_hash = create_shadow_node_hash(source_other_node, to_partition)
+        if direction == :incoming
+          to_partition.get_relationship_index(rel_in_source.rel_type,
+                                              target_other_node_hash["data"]["global_id"],
+                                              node_hash["data"]["global_id"])
+        else
+          to_partition.get_relationship_index(rel_in_source.rel_type,
+                                              node_hash["data"]["global_id"],
+                                              target_other_node_hash["data"]["global_id"])
         end
 
-        case direction
-          when :incoming
-            #new_rel = partition.create_relationship(rel["type"], start_node_to_partition, end_node)
-            new_rel = to_partition.create_relationship(rel.rel_type, target_other_node_hash, node)
-          else
-            new_rel = to_partition.create_relationship(rel.rel_type, node, target_other_node_hash)
-        end
-
-        properties = from_partition.get_relationship_properties(rel)
-        to_partition.set_relationship_properties(new_rel, properties) unless properties.nil?
       end
 
       def create_shadow_node_hash(node, partition)
@@ -236,16 +288,21 @@ module Tez
       end
 
       def test_migrate_node_to_partition
-        n2_8474 = Neography::Node.load(@neo2, 2)
-        migrate_node_to_partition(n2_8474, 7474)
+        migrate_node_to_partition(Neography::Node.load(@neo2, 1), 7474)
+        migrate_node_to_partition(Neography::Node.load(@neo2, 3), 7474)
+        migrate_node_to_partition(Neography::Node.load(@neo2, 7), 7474)
+        migrate_node_to_partition(Neography::Node.load(@neo2, 8), 7474)
 
         #n1_8474 = Neography::Node.load(@neo2, 1)
         #migrate_node_to_partition(n1_8474, 7474)
       end
 
       #noinspection RubyInstanceMethodNamingConvention
-      def test_migrate_incoming_rels_of_node
-        migrate_relations_of_node( 2, @neo2, @neo1, :both)
+      def test_migrate_relations_of_node
+        migrate_relations_of_node( 1, @neo2, @neo1, :both)
+        migrate_relations_of_node( 3, @neo2, @neo1, :both)
+        migrate_relations_of_node( 7, @neo2, @neo1, :both)
+        migrate_relations_of_node( 8, @neo2, @neo1, :both)
       end
 
     end
@@ -254,6 +311,10 @@ end
 
 pc = Tez::PartitionController.new
 #pc.preload_neo4j(pc.neo2)
+
 pc.test_migrate_node_to_partition
 
-pc.test_migrate_incoming_rels_of_node
+pc.test_migrate_relations_of_node
+
+
+#node_id = array.first["self"].split('/').last
