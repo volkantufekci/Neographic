@@ -1,7 +1,7 @@
 require 'neography'
 require '../redis_connector'
 
-class VTPartition < Neography::Rest
+class Partition < Neography::Rest
 
   include RedisModul
 

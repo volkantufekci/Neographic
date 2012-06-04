@@ -1,5 +1,5 @@
 require "test/unit"
-require '../vt_partition'
+require '../partition'
 require '../redis_connector'
 
 class VtPartition < Test::Unit::TestCase
@@ -22,7 +22,7 @@ class VtPartition < Test::Unit::TestCase
 
     reset_neo3
 
-    @neo_test = VTPartition.new({:protocol => 'http://',
+    @neo_test = Partition.new({:protocol => 'http://',
                      :server => 'localhost',
                      :port => 9474,
                      :directory => '',  # use '/<my directory>' or leave out for default
