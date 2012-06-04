@@ -44,6 +44,7 @@
 @neo.get_node_index(index, key, value)                     # exact query of the node index with the given key/value pair
 @neo.find_node_index(index, key, value)                    # advanced query of the node index with the given key/value pair
 @neo.find_node_index(index, query )                        # advanced query of the node index with the given query
+
 @neo.list_relationship_indexes                             # gives names and query templates for relationship indices
 @neo.create_relationship_index(name, "fulltext", provider) # creates a relationship index with "fulltext" option
 @neo.add_relationship_to_index(index, key, value, rel1)    # adds a relationship to the index with the given key/value pair
