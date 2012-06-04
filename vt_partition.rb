@@ -5,8 +5,9 @@ class VTPartition < Neography::Rest
 
   include RedisModul
 
-  def initialize(options)
+  def initialize(options, redis_dic)
     super(options)
+    @redis_connector = RedisConnector.new(redis_dic)
     @logger.level=Logger::INFO
   end
 
@@ -15,19 +16,27 @@ class VTPartition < Neography::Rest
     if properties[:global_id]
       @logger.info("Node with global_id: #{properties[:global_id]} will be migrated to partition: #{self.port}")
     else
-      global_id = RedisConnector.new_global_id
+      global_id = @redis_connector.new_global_id
       properties[:global_id] = global_id
-      RedisConnector.create_partition_list_for_node(global_id, self.port)
+      @redis_connector.create_partition_list_for_node(global_id, self.port)
       #@log.info("new global id created: #{global_id}")
     end
 
-    new_node = Neography::Node.create(properties, self)
     properties[:shadow] = false
+    new_node = Neography::Node.create(properties, self)
     @logger.info("Node(#{new_node.neo_id}) with global_id: #{properties[:global_id]} created in partition with port: #{self.port}")
 
     self.add_node_to_index(:globalidindex, :global_id, new_node.global_id, new_node)
 
     new_node
+  end
+
+  def create_shadow_node_hash(node)
+    new_shadow_node_hash = create_unique_node(:globalidindex, :global_id, node.global_id, node.marshal_dump)
+    self.set_node_properties(new_shadow_node_hash, {:shadow => true})
+
+    @logger.info("Shadow node with global_id: #{node.global_id} is created ")
+    new_shadow_node_hash
   end
 
   def create_relation(rel, node_hash, target_other_node_h, direction)
@@ -62,17 +71,6 @@ class VTPartition < Neography::Rest
     @logger.info("#{other_node_title}=>#{rel.rel_type}=>#{node_title} created")
   end
 
-  def create_shadow_node_hash(node)
-    new_shadow_node_hash = self.create_unique_node(:globalidindex,
-                                                        :global_id,
-                                                        node.global_id,
-                                                        node.marshal_dump)
-    self.set_node_properties(new_shadow_node_hash, {:shadow => true})
-
-    @logger.info("Shadow node with global_id: #{node.global_id} is created ")
-    new_shadow_node_hash
-  end
-
   def get_indexed_node(global_id_value)
     @logger.info("get_indexed_node with gid:#{global_id_value} from port:#{self.port}")
 
@@ -96,7 +94,7 @@ class VTPartition < Neography::Rest
 
     properties_from_old = old_real_node.marshal_dump
     properties_from_old[:shadow] = will_be_shadow
-    self.set_node_properties(shadow_node_hash, properties_from_old)
+    set_node_properties(shadow_node_hash, properties_from_old)
     @logger.info("node's properties is set to shadow node's")
   end
 
@@ -115,5 +113,9 @@ class VTPartition < Neography::Rest
 
   end
 
+  def shadow_node(gid)
+    shadow_node_h = get_indexed_node(gid)
+    set_node_properties(shadow_node_h, {:shadow => true})
+  end
 
 end
