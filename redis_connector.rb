@@ -9,25 +9,34 @@ module RedisModul
       @log = Logger.new(STDOUT)
     end
 
-    def add_to_partition_list_for_node(node_global_id, port)
-      result = self.create_partition_list_for_node(node_global_id, port)
-      log.info("add_to_partition_list_for_node( #{node_global_id}, #{port}) => #{result}")
+    def add_to_partition_list_for_node(gid, port)
+      create_partition_list_for_node(gid, port)
     end
 
-    def create_partition_list_for_node(node_global_id, port)
-      @redis.lpush node_global_id, port
+    def create_partition_list_for_node(gid, port)
+      result = @redis.lpush gid, port
+      @log.info("Redis add_to_partition_list_for_node(#{gid}, #{port}) returns: #{result}. VT")
+    end
+
+    def remove_partition_holding_real(gid)
+      result = @redis.lpop gid
+      @log.info("Redis remove_partition_holding_real for gid: #{gid} returns #{result}. VT")
     end
 
     def new_global_id
-      @redis.incr :global_neo4j_id
+      result = @redis.incr :global_neo4j_id
+      @log.info("Redis created new gid: #{result}")
     end
 
-    def partitions_have_the_node(node_global_id)
-      @redis.lrange node_global_id, "0", "-1"
+    def partitions_have_the_node(gid)
+      result = @redis.lrange gid, "0", "-1"
+      @log.info("Redis partitions_have_the_node for gid: #{result}. VT")
+      result
     end
 
     def reset_global_id
       @redis.set :global_neo4j_id, "0"
+      @log.info("Redis reset global_neo4j_id. VT")
     end
 
     def remove_all
