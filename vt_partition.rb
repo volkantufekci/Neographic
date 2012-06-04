@@ -10,7 +10,7 @@ class VTPartition < Neography::Rest
     @logger.level=Logger::INFO
   end
 
-  def create_real_node_in_partition(properties)
+  def create_real_node(properties)
     #if properties include global_id that means this is a migrate process
     if properties[:global_id]
       @logger.info("Node with global_id: #{properties[:global_id]} will be migrated to partition: #{self.port}")
@@ -28,6 +28,38 @@ class VTPartition < Neography::Rest
     self.add_node_to_index(:globalidindex, :global_id, new_node.global_id, new_node)
 
     new_node
+  end
+
+  def create_relation(rel, node_hash, target_other_node_h, direction)
+    case direction
+      when :incoming
+        #new_rel = partition.create_relationship(rel_in_source["type"], start_node_to_partition, end_node)
+        #new_rel = to_partition.create_relationship(rel.rel_type, target_other_node_h, node_hash)
+        new_rel = create_unique_relationship(rel.rel_type,
+                                                  target_other_node_h["data"]["global_id"],
+                                                  node_hash["data"]["global_id"],
+                                                  rel.rel_type,
+                                                  target_other_node_h, node_hash)
+        log_relation_migration(node_hash, rel, target_other_node_h)
+      when :outgoing
+        #new_rel = to_partition.create_relationship(rel.rel_type, node_hash, target_other_node_h)
+        new_rel = create_unique_relationship(rel.rel_type,
+                                                  node_hash["data"]["global_id"],
+                                                  target_other_node_h["data"]["global_id"],
+                                                  rel.rel_type,
+                                                  node_hash, target_other_node_h)
+        log_relation_migration(target_other_node_h, rel, node_hash)
+      else
+        @logger.error("direction:#{direction} other than :incoming or :outgoing!")
+        new_rel = nil
+    end
+    new_rel
+  end
+
+  def log_relation_migration(node_hash, rel, target_other_node_h)
+    other_node_title = target_other_node_h["data"]["title"]
+    node_title = node_hash["data"]["title"]
+    @logger.info("#{other_node_title}=>#{rel.rel_type}=>#{node_title} created")
   end
 
   def create_shadow_node_hash(node)

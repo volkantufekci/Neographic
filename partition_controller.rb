@@ -77,14 +77,14 @@ module Tez
 
       # @param [Neography::Rest] neo4j
       def preload_neo4j (neo4j)
-        a = neo4j.create_real_node_in_partition({:title => "a"})
-        b = neo4j.create_real_node_in_partition({:title => "b"})
-        c = neo4j.create_real_node_in_partition({:title => "c"})
-        d = neo4j.create_real_node_in_partition({:title => "d"})
-        e = neo4j.create_real_node_in_partition({:title => "e"})
-        f = neo4j.create_real_node_in_partition({:title => "f"})
-        g = neo4j.create_real_node_in_partition({:title => "g"})
-        h = neo4j.create_real_node_in_partition({:title => "h"})
+        a = neo4j.create_real_node({:title => "a"})
+        b = neo4j.create_real_node({:title => "b"})
+        c = neo4j.create_real_node({:title => "c"})
+        d = neo4j.create_real_node({:title => "d"})
+        e = neo4j.create_real_node({:title => "e"})
+        f = neo4j.create_real_node({:title => "f"})
+        g = neo4j.create_real_node({:title => "g"})
+        h = neo4j.create_real_node({:title => "h"})
         #Relationships
         neo4j.create_node_index(:knows)
         #Neography::Relationship.create(:knows, a, b)
@@ -115,7 +115,7 @@ module Tez
           RedisConnector.add_to_partition_list_for_node(old_real_node.global_id, port)
         else
           # There is no shadow node in target_part, so create new real node
-          target_partition.create_real_node_in_partition(old_real_node.marshal_dump)
+          target_partition.create_real_node(old_real_node.marshal_dump)
         end
 
       end
@@ -166,7 +166,7 @@ module Tez
         end
 
         unless rel_exists
-          new_rel = create_relation(rel, node_hash, target_other_node_h, to_partition, direction)
+          new_rel = to_partition.create_relation(rel, node_hash, target_other_node_h, direction)
 
           unless new_rel
             properties = from_partition.get_relationship_properties(rel)
@@ -174,38 +174,6 @@ module Tez
           end
 
         end
-      end
-
-      def create_relation(rel, node_hash, target_other_node_h, to_partition, direction)
-        case direction
-          when :incoming
-            #new_rel = partition.create_relationship(rel_in_source["type"], start_node_to_partition, end_node)
-            #new_rel = to_partition.create_relationship(rel.rel_type, target_other_node_h, node_hash)
-            new_rel = to_partition.create_unique_relationship(rel.rel_type,
-                                                              target_other_node_h["data"]["global_id"],
-                                                              node_hash["data"]["global_id"],
-                                                              rel.rel_type,
-                                                              target_other_node_h, node_hash)
-            log_relation_migration(node_hash, rel, target_other_node_h)
-          when :outgoing
-            #new_rel = to_partition.create_relationship(rel.rel_type, node_hash, target_other_node_h)
-            new_rel = to_partition.create_unique_relationship(rel.rel_type,
-                                                              node_hash["data"]["global_id"],
-                                                              target_other_node_h["data"]["global_id"],
-                                                              rel.rel_type,
-                                                              node_hash, target_other_node_h)
-            log_relation_migration(target_other_node_h, rel, node_hash)
-          else
-            @log.error("direction:#{direction} other than :incoming or :outgoing!")
-            new_rel = nil
-        end
-        new_rel
-      end
-
-      def log_relation_migration(node_hash, rel, target_other_node_h)
-        other_node_title = target_other_node_h["data"]["title"]
-        node_title = node_hash["data"]["title"]
-        @log.info("#{other_node_title}=>#{rel.rel_type}=>#{node_title} created")
       end
 
       def other_node_of_rel(rel, direction)
