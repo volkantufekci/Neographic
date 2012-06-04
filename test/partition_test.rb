@@ -2,7 +2,7 @@ require "test/unit"
 require '../partition'
 require '../redis_connector'
 
-class VtPartition < Test::Unit::TestCase
+class PartitionTest < Test::Unit::TestCase
 
   include RedisModul
 
@@ -17,7 +17,8 @@ class VtPartition < Test::Unit::TestCase
   end
 
   def setup
-    @redis_connector = RedisConnector.new(:host => 'localhost', :port => 7379)
+    test_port = 7379
+    @redis_connector = RedisConnector.new(:host => 'localhost', :port => test_port)
     @redis_connector.remove_all
 
     reset_neo3
@@ -31,7 +32,7 @@ class VtPartition < Test::Unit::TestCase
                      :password => '',  #leave out for default
                      :log_file => STDOUT,
                      :log_enabled => true,
-                     :max_threads => 20}, {:host => 'localhost', :port => 7379})
+                     :max_threads => 20}, {:host => 'localhost', :port => test_port})
 
 
     preload_neo4j(@neo_test)

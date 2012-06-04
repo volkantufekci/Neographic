@@ -2,7 +2,7 @@ require 'rubygems'
 require 'neography'
 require 'neography/node'
 require '/home/vol/Development/tez/Neographic/redis_connector'
-require '/home/vol/Development/tez/Neographic/vt_partition'
+require '/home/vol/Development/tez/Neographic/partition'
 
 module Tez
 
@@ -64,7 +64,7 @@ module Tez
       end
 
       def connect_to_neo4j_instance (domain, port, redis_dic)
-        VTPartition.new({:protocol => 'http://',
+        Partition.new({:protocol => 'http://',
                              :server => domain,
                              :port => port,
                              :directory => '',  # use '/<my directory>' or leave out for default
