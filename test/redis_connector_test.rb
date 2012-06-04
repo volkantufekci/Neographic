@@ -37,4 +37,19 @@ class RedisConnectorTest < Test::Unit::TestCase
     assert(array.count == 0)
   end
 
+  def test_update_partition_list
+    gid = 1
+    old_partition_port = "222"
+    @redis_connector.add_to_partition_list_for_node(gid, old_partition_port)
+    array = @redis_connector.partitions_have_the_node(gid)
+    assert(array.count == 1)
+
+    expected_new_partition_port = "333"
+    @redis_connector.update_partition_list_for_node(gid, expected_new_partition_port)
+    actual_new_partition_port = @redis_connector.partitions_have_the_node(gid).first
+    assert_equal(expected_new_partition_port, actual_new_partition_port,
+                 "expected: #{expected_new_partition_port} but was #{actual_new_partition_port}")
+
+  end
+
 end

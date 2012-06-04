@@ -19,6 +19,11 @@ module RedisModul
       result
     end
 
+    def update_partition_list_for_node(gid, new_partition_port)
+      remove_partition_holding_real(gid)
+      add_to_partition_list_for_node(gid, new_partition_port)
+    end
+
     def remove_partition_holding_real(gid)
       result = @redis.lpop gid
       @log.info("Redis remove_partition_holding_real for gid: #{gid} returns #{result}. VT")
