@@ -101,22 +101,23 @@ module Tez
 
       end
 
-      def migrate_node_to_partition(old_real_node, port)
-        target_partition = neo4j_instances[port]
+      def migrate_node_to_partition(old_real_node, target_port)
+        target_partition = neo4j_instances[target_port]
 
         # redis'ten target partitionda global_id'li node var miya bak
         #noinspection RubyResolve
         partitions_have_the_node = @redis_connector.partitions_have_the_node(old_real_node.global_id)
 
         if partitions_have_the_node.empty?
-          @log.error("every node should at least have a partition")
-        elsif partitions_have_the_node.index(port.to_s)
+          @log.error("Every node should at least have a partition. VT")
+        elsif partitions_have_the_node.index(target_port.to_s)
           # There is shadow node, copy properties of real node to this shadow node
           target_partition.migrate_properties_of_node(old_real_node, false)
-          @redis_connector.add_to_partition_list_for_node(old_real_node.global_id, port)
+          @redis_connector.add_to_partition_list_for_node(old_real_node.global_id, target_port)
         else
           # There is no shadow node in target_part, so create new real node
           target_partition.create_real_node(old_real_node.marshal_dump)
+          @redis_connector.update_partition_list_for_node(old_real_node.global_id, target_port)
         end
 
       end

@@ -44,14 +44,6 @@ class PartitionControllerTest < Test::Unit::TestCase
     assert_not_nil(n1_migrated, "Node with gid:1 is not migrated!!!")
   end
 
-  #noinspection RubyInstanceMethodNamingConvention
-  #def test_migrate_relations_of_node
-  #  @pc.migrate_relations_of_node( 1, @pc.neo2, @pc.neo1, :both)
-  #  @pc.migrate_relations_of_node( 3, @pc.neo2, @pc.neo1, :both)
-  #  @pc.migrate_relations_of_node( 7, @pc.neo2, @pc.neo1, :both)
-  #  @pc.migrate_relations_of_node( 8, @pc.neo2, @pc.neo1, :both)
-  #end
-
   def reset_neo1
     `~/Development/tez/Neo4jSurumleri/neo4j-community-1.7_1/bin/neo4j stop`
     `rm -r ~/Development/tez/Neo4jSurumleri/neo4j-community-1.7_1/data/graph.db/*`
