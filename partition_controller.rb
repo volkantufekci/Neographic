@@ -12,8 +12,9 @@ module Tez
 
       attr_reader :neo1, :neo2, :neo4j_instances
 
-      def initialize
-        initialize_neo4j_instances
+      def initialize(redis_dic={})
+        initialize_neo4j_instances(redis_dic)
+        @redis_connector = RedisConnector.new(redis_dic)
         @log = Logger.new(STDOUT)
       end
 
@@ -54,15 +55,15 @@ module Tez
       end
 =end
 
-      def initialize_neo4j_instances
-        @neo1 = connect_to_neo4j_instance('localhost', 7474)
-        @neo2 = connect_to_neo4j_instance('localhost', 8474)
+      def initialize_neo4j_instances(redis_dic)
+        @neo1 = connect_to_neo4j_instance('localhost', 7474, redis_dic)
+        @neo2 = connect_to_neo4j_instance('localhost', 8474, redis_dic)
         @neo4j_instances = Hash.new
         @neo4j_instances[@neo1.port] = @neo1
         @neo4j_instances[@neo2.port] = @neo2
       end
 
-      def connect_to_neo4j_instance (domain, port)
+      def connect_to_neo4j_instance (domain, port, redis_dic)
         VTPartition.new({:protocol => 'http://',
                              :server => domain,
                              :port => port,
@@ -72,7 +73,7 @@ module Tez
                              :password => '',  #leave out for default
                              :log_file => STDOUT,
                              :log_enabled => true,
-                             :max_threads => 20})
+                             :max_threads => 20}, redis_dic)
       end
 
       # @param [Neography::Rest] neo4j
@@ -105,14 +106,14 @@ module Tez
 
         # redis'ten target partitionda global_id'li node var miya bak
         #noinspection RubyResolve
-        partitions_have_the_node = RedisConnector.partitions_have_the_node(old_real_node.global_id)
+        partitions_have_the_node = @redis_connector.partitions_have_the_node(old_real_node.global_id)
 
         if partitions_have_the_node.empty?
           @log.error("every node should at least have a partition")
         elsif partitions_have_the_node.index(port.to_s)
           # There is shadow node, copy properties of real node to this shadow node
           target_partition.migrate_properties_of_node(old_real_node, false)
-          RedisConnector.add_to_partition_list_for_node(old_real_node.global_id, port)
+          @redis_connector.add_to_partition_list_for_node(old_real_node.global_id, port)
         else
           # There is no shadow node in target_part, so create new real node
           target_partition.create_real_node(old_real_node.marshal_dump)
