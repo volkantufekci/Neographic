@@ -17,7 +17,8 @@ class RedisConnectorTest < Test::Unit::TestCase
 
 
   def setup
-    @redis_connector = RedisConnector.new(:host => 'localhost', :port => 7379)
+    test_port = 7379
+    @redis_connector = RedisConnector.new(:host => 'localhost', :port => test_port)
     @redis_connector.remove_all
   end
 
@@ -50,6 +51,15 @@ class RedisConnectorTest < Test::Unit::TestCase
     assert_equal(expected_new_partition_port, actual_new_partition_port,
                  "expected: #{expected_new_partition_port} but was #{actual_new_partition_port}")
 
+  end
+
+  def test_real_partition_of_node
+    gid = "volkan"
+    @redis_connector.add_to_partition_list_for_node(gid, "first")
+    @redis_connector.add_to_partition_list_for_node(gid, "second")
+
+    real_partition = @redis_connector.real_partition_of_node(gid)
+    assert_equal("second", real_partition, "expected real partition was second but got #{real_partition}")
   end
 
 end

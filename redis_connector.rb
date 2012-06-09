@@ -38,8 +38,14 @@ module RedisModul
 
     def partitions_have_the_node(gid)
       result = @redis.lrange gid, "0", "-1"
-      @log.info("Redis partitions_have_the_node for gid: #{result}. VT")
+      @log.info("Redis partitions_have_the_node for gid:#{gid} is #{result}. VT")
       result
+    end
+
+    def real_partition_of_node(gid)
+      result = @redis.lrange gid, "0", "0"
+      @log.debug("Redis real_partition_of_node with gid:#{gid} is #{result.first}")
+      result.first
     end
 
     def reset_global_id
