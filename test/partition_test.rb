@@ -38,21 +38,39 @@ class PartitionTest < Test::Unit::TestCase
     preload_neo4j(@neo_test)
   end
 
-  # Called after every test method runs. Can be used to tear
-  # down fixture information.
-
   def teardown
     # Do nothing
   end
 
-  def test_shadow_node
-    @neo_test.shadow_node(1)
-    n1 = @neo_test.get_indexed_node(1)
+  def test_create_shadow_node_hash
+    logger.info("TEST_CREATE_SHADOW_NODE_HASH STARTED")
 
-    assert_equal(true, n1["data"]["shadow"], "Failed to make node shadow")
+    node = @neo_test.create_real_node({:title => "test_create_node"})
+    node.global_id = 555
+
+    @neo_test.create_shadow_node_hash(node)
+    actual_shadow_node_hash = @neo_test.get_shadow_node_index.first
+
+    assert_equal(555, actual_shadow_node_hash["data"]["global_id"], "create_shadow_node_hash failed")
   end
 
+  def test_mark_as_shadow
+    logger.info("TEST_MARK_AS_SHADOW STARTED")
+
+    @neo_test.mark_as_shadow(1)
+    n1 = @neo_test.get_indexed_node(1)
+    assert_equal(true, n1["data"]["shadow"], "Failed to make node shadow")
+
+    n1 = @neo_test.get_shadow_node_index.first
+    assert_equal(true, n1["data"]["shadow"], "Shadow node should have been indexed at shadow index")
+  end
+
+
+
+  #### HELPER METHODS ####
+
   def reset_neo3
+    logger.info("neo3_test is being reset. VT")
     `~/Development/tez/Neo4jSurumleri/neo4j-community-1.7_3/bin/neo4j stop`
     `rm -r ~/Development/tez/Neo4jSurumleri/neo4j-community-1.7_3/data/graph.db/*`
     `~/Development/tez/Neo4jSurumleri/neo4j-community-1.7_3/bin/neo4j start`
@@ -60,11 +78,18 @@ class PartitionTest < Test::Unit::TestCase
 
   def preload_neo4j (neo4j)
     neo4j.create_node_index(:knows)
+    neo4j.create_node_index(:shadows)
     a = neo4j.create_real_node({:title => "a", :sahip => "atakan"})
     v = neo4j.create_real_node({:title => "v", :sahip => "volkan"})
 
 
     neo4j.create_unique_relationship(:knows, a.global_id, v.global_id, :knows, a, v)
+  end
+
+  def logger
+    @logger ||= Logger.new(STDOUT)
+    @logger.level=Logger::INFO
+    @logger
   end
 
 end
