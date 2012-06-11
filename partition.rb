@@ -31,9 +31,18 @@ class Partition < Neography::Rest
     new_node
   end
 
+  def add_to_shadow_index(new_shadow_node_hash)
+    self.add_node_to_index(:shadows, :shadow, true, new_shadow_node_hash)
+  end
+
+  def get_shadow_node_index
+    get_node_index(:shadows, :shadow, true)
+  end
+
   def create_shadow_node_hash(node)
     new_shadow_node_hash = create_unique_node(:globalidindex, :global_id, node.global_id, node.marshal_dump)
     self.set_node_properties(new_shadow_node_hash, {:shadow => true})
+    self.add_to_shadow_index(new_shadow_node_hash)
 
     @logger.info("Shadow node with global_id: #{node.global_id} is created ")
     new_shadow_node_hash
@@ -113,9 +122,12 @@ class Partition < Neography::Rest
 
   end
 
-  def shadow_node(gid)
+  def mark_as_shadow(gid)
+    @logger.debug("Marking node with gid:#{gid} shadow in partition: #{self.port}")
     shadow_node_h = get_indexed_node(gid)
     set_node_properties(shadow_node_h, {:shadow => true})
+    add_to_shadow_index(shadow_node_h)
   end
+
 
 end
