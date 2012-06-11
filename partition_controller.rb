@@ -18,7 +18,6 @@ module Tez
         @log = Logger.new(STDOUT)
       end
 
-=begin
       def del_rels_to_shadows_for_node (node)
         #noinspection RubyResolve
         # Collect relations to shadow node
@@ -30,30 +29,6 @@ module Tez
       def has_any_relation? (node)
         node.rels.size > 0
       end
-
-      def shadow_nodes (nodes)
-        nodes.each do |node|
-          make_node_shadow(node)
-        end
-      end
-
-      def unshadow_nodes (nodes)
-        nodes.each do |node|
-          make_node_unshadow(node)
-        end
-      end
-
-      # @param [Neography::Node] node
-      def make_node_shadow (node)
-        #noinspection RubyResolve
-        node.shadow = true
-      end
-
-      def make_node_unshadow (node)
-        #noinspection RubyResolve
-        node.shadow = nil
-      end
-=end
 
       def initialize_neo4j_instances(redis_dic)
         @neo1 = connect_to_neo4j_instance('localhost', 7474, redis_dic)
@@ -76,7 +51,6 @@ module Tez
                              :max_threads => 20}, redis_dic)
       end
 
-      # @param [Neography::Rest] neo4j
       def preload_neo4j (neo4j)
         a = neo4j.create_real_node({:title => "a"})
         b = neo4j.create_real_node({:title => "b"})
@@ -88,6 +62,7 @@ module Tez
         h = neo4j.create_real_node({:title => "h"})
         #Relationships
         neo4j.create_node_index(:knows)
+        neo4j.create_node_index(:shadows)
         #Neography::Relationship.create(:knows, a, b)
         neo4j.create_unique_relationship(:knows, a.global_id, b.global_id, :knows, a, b)
         neo4j.create_unique_relationship(:knows, a.global_id, c.global_id, :knows, a, c)
@@ -101,6 +76,51 @@ module Tez
 
       end
 
+      def migrate_via_gpart_mapping(gpart_mapping, before_mapping_hash)
+        @log.debug("Migrating Via Gpart Mapping Started")
+
+        #her bir eleman icin real_node'un partitionini al
+        @log.debug "Migrating Nodes To Partitions"
+        gpart_mapping.each { |key, value|
+          gid = key
+          source_partition_port = @redis_connector.real_partition_of_node(gid).to_i
+          target_partition_port = value
+          if target_partition_port != source_partition_port
+            #There should be a migration
+            source_partition = neo4j_instances[source_partition_port]
+            local_id = source_partition.get_indexed_node(gid)
+            migrate_node_to_partition(Neography::Node.load(source_partition, local_id), target_partition_port)
+          end
+        }
+
+        @log.debug("Migrating Relations Of Nodes")
+        gpart_mapping.each { |key, value|
+          gid = key
+          source_partition_port = before_mapping_hash[key]
+          target_partition_port = value
+          if target_partition_port != source_partition_port
+            #There should be a migration
+            source_partition = neo4j_instances[source_partition_port]
+            target_partition = neo4j_instances[target_partition_port]
+
+            ####TODO bu metod tam functional programminglik
+            migrate_relations_of_node(gid, source_partition, target_partition, :both)
+          end
+        }
+
+        @log.debug("Marking Migrated Nodes As Shadow")
+        gpart_mapping.each { |key, value|
+          gid = key
+          source_partition_port = before_mapping_hash[key]
+          target_partition_port = value
+          if target_partition_port != source_partition_port
+            source_partition = neo4j_instances[source_partition_port]
+            source_partition.mark_as_shadow(gid)
+          end
+        }
+
+      end
+
       def migrate_node_to_partition(old_real_node, target_port)
         target_partition = neo4j_instances[target_port]
 
@@ -109,7 +129,7 @@ module Tez
         partitions_have_the_node = @redis_connector.partitions_have_the_node(old_real_node.global_id)
 
         if partitions_have_the_node.empty?
-          @log.error("Every node should at least have a partition. VT")
+          @log.error "Every node should at least have a partition. VT"
         elsif partitions_have_the_node.index(target_port.to_s)
           # There is shadow node, copy properties of real node to this shadow node
           target_partition.migrate_properties_of_node(old_real_node, false)
@@ -123,7 +143,7 @@ module Tez
       end
 
       def migrate_relations_of_node(node_global_id, from_partition, to_partition, direction)
-
+        @log.debug "Migrating Relations Of Node gid:#{node_global_id} from:#{from_partition.port} to:#{to_partition.port}"
         source_node_hash = from_partition.get_indexed_node(node_global_id)
         target_node_hash = to_partition.get_indexed_node(node_global_id)
 
