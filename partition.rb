@@ -1,5 +1,5 @@
 require 'neography'
-require '../redis_connector'
+require '/home/vol/Development/tez/Neographic/redis_connector'
 
 class Partition < Neography::Rest
 
@@ -129,5 +129,22 @@ class Partition < Neography::Rest
     add_to_shadow_index(shadow_node_h)
   end
 
+  def collect_vertex_with_neighbour_h
+    vertex_gid_array = execute_script("g.V.global_id")
+    hash = Hash.new
 
+    for i in 1...vertex_gid_array.length do
+      neighbour_gids = execute_script("g.V[#{i}].both.global_id")
+      gid = vertex_gid_array[i]
+      hash[gid] = neighbour_gids
+    end
+
+    hash
+
+    #for i in 1..7 do
+    #  neighbour_gids = execute_script("g.V[#{i}].both.global_id")
+    #  gid = pc.neo1.execute_script("g.V[#{i}].global_id").first
+    #  h[gid]=neighbour_gids
+    #end
+  end
 end
