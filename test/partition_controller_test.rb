@@ -101,44 +101,52 @@ class PartitionControllerTest < Test::Unit::TestCase
   #  assert(!n8.exist?, "Node with gid=8 should not exist!")
   #end
 
-  def test_migrate_via_gpart_mapping
-    logger.info("TEST_MIGRATE_VIA_GPART_MAPPING STARTED")
+  #def test_migrate_via_gpart_mapping
+  #  logger.info("TEST_MIGRATE_VIA_GPART_MAPPING STARTED")
+  #
+  #  gpart_mapping = @gpart_controller.perform_gpart_mapping
+  #  before_mapping_hash = @gpart_controller.before_mapping_hash
+  #
+  #  @pc.migrate_via_gpart_mapping gpart_mapping, before_mapping_hash
+  #
+  #  migrated_nodes = Array.new
+  #  migrated_nodes << Neography::Node.load(@pc.neo2, 1)
+  #  migrated_nodes << Neography::Node.load(@pc.neo2, 3)
+  #  migrated_nodes << Neography::Node.load(@pc.neo2, 7)
+  #  migrated_nodes << Neography::Node.load(@pc.neo2, 8)
+  #
+  #  migrated_nodes.each { |node| @pc.del_rels_to_shadows_for_node(node) }
+  #
+  #
+  #  n1=Neography::Node.load(@pc.neo2, 1)
+  #  n3=Neography::Node.load(@pc.neo2, 3)
+  #  n7=Neography::Node.load(@pc.neo2, 7)
+  #  n8=Neography::Node.load(@pc.neo2, 8)
+  #  migrated_nodes = Array.new
+  #  migrated_nodes << n1 << n3 << n7 << n8
+  #
+  #  migrated_nodes.each { |node|
+  #    unless @pc.has_any_relation?(node)
+  #      node.del
+  #    end
+  #  }
+  #
+  #  assert(n1.exist?, "Node with gid=1 should exist!")
+  #  assert(n3.exist?, "Node with gid=3 should exist!")
+  #
+  #  assert(!n7.exist?, "Node with gid=7 should not exist!")
+  #  assert(!n8.exist?, "Node with gid=8 should not exist!")
+  #
+  #end
 
-    gpart_mapping = @gpart_controller.perform_gpart_mapping
-    before_mapping_hash = @gpart_controller.before_mapping_hash
+  def test_merge_node_nei_hashes
+    logger.info("TEST_MERGE_NODE_NEIG_HASHES STARTED")
 
-    @pc.migrate_via_gpart_mapping gpart_mapping, before_mapping_hash
-
-    migrated_nodes = Array.new
-    migrated_nodes << Neography::Node.load(@pc.neo2, 1)
-    migrated_nodes << Neography::Node.load(@pc.neo2, 3)
-    migrated_nodes << Neography::Node.load(@pc.neo2, 7)
-    migrated_nodes << Neography::Node.load(@pc.neo2, 8)
-
-    migrated_nodes.each { |node| @pc.del_rels_to_shadows_for_node(node) }
-
-
-    n1=Neography::Node.load(@pc.neo2, 1)
-    n3=Neography::Node.load(@pc.neo2, 3)
-    n7=Neography::Node.load(@pc.neo2, 7)
-    n8=Neography::Node.load(@pc.neo2, 8)
-    migrated_nodes = Array.new
-    migrated_nodes << n1 << n3 << n7 << n8
-
-    migrated_nodes.each { |node|
-      unless @pc.has_any_relation?(node)
-        node.del
-      end
-    }
-
-    assert(n1.exist?, "Node with gid=1 should exist!")
-    assert(n3.exist?, "Node with gid=3 should exist!")
-
-    assert(!n7.exist?, "Node with gid=7 should not exist!")
-    assert(!n8.exist?, "Node with gid=8 should not exist!")
-
+    actual = @pc.merge_node_neighbour_hashes
+    expected = {1=>[2, 3], 2=>[1, 3, 4, 5], 3=>[1, 2, 5, 7, 8], 4=>[2], 5=>[2, 3, 6], 6=>[5], 7=>[3], 8=>[3]}
+    assert_equal(expected, actual, "neighbour hash is not correct!")
+    logger.debug("actual:   #{actual} \n expected: #{expected}")
   end
-
 
   ### END OF TESTS - BEGINNING OF HELPER METHODS
 

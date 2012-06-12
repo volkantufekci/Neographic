@@ -208,15 +208,19 @@ module Tez
         source_other_node
       end
 
+      def merge_node_neighbour_hashes
+        @log.debug "Merging node=>[nei1, nei2, ...] hashes coming from partitions"
+
+        final_hash = {}
+        @neo4j_instances.values.each do |neo_instance|
+          final_hash.merge!(neo_instance.collect_vertex_with_neighbour_h) { |key, oldval, newval|
+            (oldval + newval).uniq
+          }
+        end
+        final_hash
+      end
     end
 end
-
-
-#pc = Tez::PartitionController.new
-
-#pc.test_migrate_node_to_partition
-#
-#pc.test_migrate_relations_of_node
 
 
 #node_id = array.first["self"].split('/').last
