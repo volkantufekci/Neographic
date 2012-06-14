@@ -6,8 +6,16 @@ class GpartController
     @gpart_index_array = []
   end
 
-  def read_gpart_mapping
-    words = IO.readlines("../gpartDenemeleri/2/mapping.map")
+  def perform_gpart_mapping
+    #TODO gpart should be called to do the mapping
+    `gpart 2 #{Configuration::GPART_GRF_PATH} #{Configuration::GPART_RESULT_PATH}`
+    gpart_mapping = read_gpart_result
+    gpart_mapping = inject_partition_ports(gpart_mapping)
+    #should return sth like {1=>1, 2=>0, 3=>1, 4=>0, 5=>0, 6=>0, 7=>1, 8=>1}
+  end
+
+  def read_gpart_result
+    words = IO.readlines(Configuration::GPART_RESULT_PATH)
 
     hash = Hash.new
     words.each{ |line|
@@ -19,18 +27,6 @@ class GpartController
     hash_with_keys_plus1 = Hash.new
     hash.each { |key, value| hash_with_keys_plus1[key+1]=value }  #Plus 1 as gpart starts with 0
     hash_with_keys_plus1
-  end
-
-  def before_mapping_hash
-    #TODO find a way to keep the mapping before migrations
-    hash = {1=>0, 2=>0, 3=>0, 4=>0, 5=>0, 6=>0, 7=>0, 8=>0}
-    hash = inject_partition_ports hash
-  end
-
-  def perform_gpart_mapping
-    gpart_mapping = read_gpart_mapping
-    gpart_mapping = inject_partition_ports(gpart_mapping)
-    #should return sth like {1=>1, 2=>0, 3=>1, 4=>0, 5=>0, 6=>0, 7=>1, 8=>1}
   end
 
   def build_grf_file(array)
@@ -56,17 +52,19 @@ class GpartController
     end
 
     to_the_file = "0\n" << "#{not_empty_node_count}\t" << "#{relation_count}\n" << "0\t000" << lines
-    puts to_the_file
-
-    gpart_input_file = File.new Configuration::GRF_FILE_PATH, "w"
-    gpart_input_file.write to_the_file
-    gpart_input_file.close
+    write_to_grf_file(to_the_file)
 
     to_the_file
-
   end
 
-  #could be private
+  private
+
+  def write_to_grf_file(to_the_file)
+    gpart_input_file = File.new Configuration::GPART_GRF_PATH, "w"
+    gpart_input_file.write to_the_file
+    gpart_input_file.close
+  end
+
   def inject_partition_ports(gpart_mapping)
     #0, 1'leri 7474 8474 gibi portlarla degistir
     gpart_mapping.each_pair do |key,value|

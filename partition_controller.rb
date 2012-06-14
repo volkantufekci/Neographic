@@ -219,6 +219,14 @@ module Tez
         end
         final_hash
       end
+
+      def before_mapping_hash(gid_array)
+        ##TODO test test test
+
+        hash = Hash.new
+        gid_array.each { |gid| hash[gid] = @redis_connector.real_partition_of_node(gid).to_i }
+        hash
+      end
     end
 end
 
