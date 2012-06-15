@@ -19,7 +19,7 @@ module Tez
       end
 
       def del_rels_to_shadows_for_node (node)
-        #noinspection RubyResolve
+        @log.debug("DELETING RELATIONS TO SHADOWS FOR NODE GIDl:#{node.global_id}")
         # Collect relations to shadow node
         rels_to_shadow_nodes = node.rels.both.find_all {|rel| rel.start_node.shadow && rel.end_node.shadow }
         # And... Remove them
@@ -79,6 +79,8 @@ module Tez
       def migrate_via_gpart_mapping(gpart_mapping, before_mapping_hash)
         @log.debug("Migrating Via Gpart Mapping Started")
 
+        migrated_node_shadows = []
+
         #her bir eleman icin real_node'un partitionini al
         @log.debug "Migrating Nodes To Partitions"
         gpart_mapping.each { |key, value|
@@ -89,7 +91,9 @@ module Tez
             #There should be a migration
             source_partition = neo4j_instances[source_partition_port]
             local_id = source_partition.get_indexed_node(gid)
-            migrate_node_to_partition(Neography::Node.load(source_partition, local_id), target_partition_port)
+            to_be_migrated_node = Neography::Node.load(source_partition, local_id)
+            migrated_node_shadows << to_be_migrated_node
+            migrate_node_to_partition(to_be_migrated_node, target_partition_port)
           end
         }
 
@@ -116,6 +120,15 @@ module Tez
           if target_partition_port != source_partition_port
             source_partition = neo4j_instances[source_partition_port]
             source_partition.mark_as_shadow(gid)
+          end
+        }
+
+        migrated_node_shadows.each { |node| self.del_rels_to_shadows_for_node(node) }
+
+        migrated_node_shadows.each { |node|
+          unless self.has_any_relation?(node)
+            node.del
+            @log.debug("Shadow node with gid: #{node.global_id} deleted")
           end
         }
 

@@ -25,9 +25,6 @@ class PartitionControllerTest < Test::Unit::TestCase
     self.reset_neo2
     @pc = Tez::PartitionController.new
     @pc.preload_neo4j(@pc.neo2)
-
-    @gpart_controller = GpartController.new
-
   end
 
   def teardown
@@ -104,39 +101,24 @@ class PartitionControllerTest < Test::Unit::TestCase
   def test_migrate_via_gpart_mapping
     logger.info("TEST_MIGRATE_VIA_GPART_MAPPING STARTED")
 
-    node_nei_h = @pc.merge_node_neighbour_hashes
-    before_mapping_hash = @pc.before_mapping_hash(node_nei_h.keys)
-    gpart_mapping = @gpart_controller.perform_gpart_mapping
+    gid_nei_h = @pc.merge_node_neighbour_hashes
+    before_mapping_hash = @pc.before_mapping_hash(gid_nei_h.keys)
 
-    @pc.migrate_via_gpart_mapping gpart_mapping, before_mapping_hash
+    @gpc = GpartController.new(gid_nei_h)
+    gpart_mapping_hash = @gpc.partition_and_return_mapping
 
-    migrated_nodes = Array.new
-    migrated_nodes << Neography::Node.load(@pc.neo2, 1)
-    migrated_nodes << Neography::Node.load(@pc.neo2, 3)
-    migrated_nodes << Neography::Node.load(@pc.neo2, 7)
-    migrated_nodes << Neography::Node.load(@pc.neo2, 8)
-
-    migrated_nodes.each { |node| @pc.del_rels_to_shadows_for_node(node) }
-
+    migrated_nodes = @pc.migrate_via_gpart_mapping gpart_mapping_hash, before_mapping_hash
 
     n1=Neography::Node.load(@pc.neo2, 1)
     n3=Neography::Node.load(@pc.neo2, 3)
     n7=Neography::Node.load(@pc.neo2, 7)
     n8=Neography::Node.load(@pc.neo2, 8)
-    migrated_nodes = Array.new
-    migrated_nodes << n1 << n3 << n7 << n8
-
-    migrated_nodes.each { |node|
-      unless @pc.has_any_relation?(node)
-        node.del
-      end
-    }
 
     assert(n1.exist?, "Node with gid=1 should exist!")
     assert(n3.exist?, "Node with gid=3 should exist!")
 
-    assert(!n7.exist?, "Node with gid=7 should not exist!")
-    assert(!n8.exist?, "Node with gid=8 should not exist!")
+    assert(!n7, "Node with gid=7 should not exist!")
+    assert(!n8, "Node with gid=8 should not exist!")
 
   end
 
