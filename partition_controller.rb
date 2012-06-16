@@ -62,7 +62,8 @@ module Tez
             local_id = source_partition.get_indexed_node(gid)
             to_be_migrated_node = Neography::Node.load(source_partition, local_id)
             migrated_node_shadows << to_be_migrated_node
-            migrate_node_to_partition(to_be_migrated_node, target_partition_port)
+            target_partition = neo4j_instances[target_partition_port]
+            @nc.migrate_node_to_partition(to_be_migrated_node, target_partition, @redis_connector)
           end
         }
 
@@ -97,26 +98,6 @@ module Tez
 
       end
 
-      def migrate_node_to_partition(old_real_node, target_port)
-        target_partition = neo4j_instances[target_port]
-
-        # redis'ten target partitionda global_id'li node var miya bak
-        #noinspection RubyResolve
-        partitions_have_the_node = @redis_connector.partitions_have_the_node(old_real_node.global_id)
-
-        if partitions_have_the_node.empty?
-          @log.error "Every node should at least have a partition. VT"
-        elsif partitions_have_the_node.index(target_port.to_s)
-          # There is shadow node, copy properties of real node to this shadow node
-          target_partition.migrate_properties_of_node(old_real_node, false)
-          @redis_connector.add_to_partition_list_for_node(old_real_node.global_id, target_port)
-        else
-          # There is no shadow node in target_part, so create new real node
-          target_partition.create_real_node(old_real_node.marshal_dump)
-          @redis_connector.update_partition_list_for_node(old_real_node.global_id, target_port)
-        end
-
-      end
 
       def merge_node_neighbour_hashes
         @log.debug "Merging node=>[nei1, nei2, ...] hashes coming from partitions"
