@@ -81,17 +81,17 @@ class Partition < Neography::Rest
   end
 
   def get_indexed_node(global_id_value)
-    @logger.info("get_indexed_node with gid:#{global_id_value} from port:#{self.port}")
+    @logger.debug("get_indexed_node with gid:#{global_id_value} from port:#{self.port}")
 
     array = self.get_node_index(:globalidindex, :global_id, global_id_value)
     if array.nil?
       @logger.info("Partition #{self.port} does not have a node with gid: #{global_id_value}")
-      node = nil
+      node_h = nil
     else
-      node = array.first
+      node_h = array.first
     end
 
-    node
+    node_h
   end
 
   def migrate_properties_of_node(old_real_node, will_be_shadow)
