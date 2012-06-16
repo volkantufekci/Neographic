@@ -21,10 +21,11 @@ class PartitionControllerTest < Test::Unit::TestCase
   def setup
     @redis_connector = RedisConnector.new
     @redis_connector.remove_all
-    self.reset_neo1
-    self.reset_neo2
+    self.reset_neo(0)
+    self.reset_neo(1)
+    self.reset_neo(2)
     @pc = Tez::PartitionController.new
-    @pc.preload_neo4j(@pc.neo2)
+    preload_neo4j(@pc.neo4j_instances[6474])
   end
 
   def teardown
@@ -109,13 +110,14 @@ class PartitionControllerTest < Test::Unit::TestCase
 
     migrated_nodes = @pc.migrate_via_gpart_mapping gpart_mapping_hash, before_mapping_hash
 
-    n1=Neography::Node.load(@pc.neo2, 1)
-    n3=Neography::Node.load(@pc.neo2, 3)
-    n7=Neography::Node.load(@pc.neo2, 7)
-    n8=Neography::Node.load(@pc.neo2, 8)
+    #n1=Neography::Node.load(@pc.neo4j_instances[6474], 1)
+    n1=@pc.neo4j_instances[6474].get_indexed_node(1)
+    n3=@pc.neo4j_instances[6474].get_indexed_node(3)
+    n7=@pc.neo4j_instances[6474].get_indexed_node(7)
+    n8=@pc.neo4j_instances[6474].get_indexed_node(8)
 
-    assert(n1.exist?, "Node with gid=1 should exist!")
-    assert(n3.exist?, "Node with gid=3 should exist!")
+    assert(n1, "Node with gid=1 should exist!")
+    assert(n3, "Node with gid=3 should exist!")
 
     assert(!n7, "Node with gid=7 should not exist!")
     assert(!n8, "Node with gid=8 should not exist!")
@@ -133,6 +135,30 @@ class PartitionControllerTest < Test::Unit::TestCase
 
   ### END OF TESTS - BEGINNING OF HELPER METHODS
 
+  def preload_neo4j (neo4j)
+    a = neo4j.create_real_node({:title => "a"})
+    b = neo4j.create_real_node({:title => "b"})
+    c = neo4j.create_real_node({:title => "c"})
+    d = neo4j.create_real_node({:title => "d"})
+    e = neo4j.create_real_node({:title => "e"})
+    f = neo4j.create_real_node({:title => "f"})
+    g = neo4j.create_real_node({:title => "g"})
+    h = neo4j.create_real_node({:title => "h"})
+    #Relationships
+    neo4j.create_node_index(:knows)
+    neo4j.create_node_index(:shadows)
+    #Neography::Relationship.create(:knows, a, b)
+    neo4j.create_unique_relationship(:knows, a.global_id, b.global_id, :knows, a, b)
+    neo4j.create_unique_relationship(:knows, a.global_id, c.global_id, :knows, a, c)
+    neo4j.create_unique_relationship(:knows, b.global_id, c.global_id, :knows, b, c)
+    neo4j.create_unique_relationship(:knows, b.global_id, d.global_id, :knows, b, d)
+    neo4j.create_unique_relationship(:knows, b.global_id, e.global_id, :knows, b, e)
+    neo4j.create_unique_relationship(:knows, c.global_id, e.global_id, :knows, c, e)
+    neo4j.create_unique_relationship(:knows, c.global_id, g.global_id, :knows, c, g)
+    neo4j.create_unique_relationship(:knows, c.global_id, h.global_id, :knows, c, h)
+    neo4j.create_unique_relationship(:knows, e.global_id, f.global_id, :knows, e, f)
+  end
+
   def shadow_nodes
     @pc.neo2.mark_as_shadow(1)
     @pc.neo2.mark_as_shadow(3)
@@ -141,10 +167,11 @@ class PartitionControllerTest < Test::Unit::TestCase
   end
 
   def migrate_relations
-    @pc.migrate_relations_of_node(1, @pc.neo2, @pc.neo1, :both)
-    @pc.migrate_relations_of_node(3, @pc.neo2, @pc.neo1, :both)
-    @pc.migrate_relations_of_node(7, @pc.neo2, @pc.neo1, :both)
-    @pc.migrate_relations_of_node(8, @pc.neo2, @pc.neo1, :both)
+    #migrate_relations_of_node is moved into relation_controller
+    @pc.rel_controller.migrate_relations_of_node(1, @pc.neo2, @pc.neo1, :both)
+    @pc.rel_controller.migrate_relations_of_node(3, @pc.neo2, @pc.neo1, :both)
+    @pc.rel_controller.migrate_relations_of_node(7, @pc.neo2, @pc.neo1, :both)
+    @pc.rel_controller.migrate_relations_of_node(8, @pc.neo2, @pc.neo1, :both)
   end
 
   def migrate_nodes_to_partition
@@ -154,18 +181,31 @@ class PartitionControllerTest < Test::Unit::TestCase
     @pc.migrate_node_to_partition(Neography::Node.load(@pc.neo2, 8), 7474)
   end
 
-  def reset_neo1
-    logger.info("neo1 is being reset. VT")
-    `~/Development/tez/Neo4jSurumleri/neo4j-community-1.7_1/bin/neo4j stop`
-    `rm -r ~/Development/tez/Neo4jSurumleri/neo4j-community-1.7_1/data/graph.db/*`
-    `~/Development/tez/Neo4jSurumleri/neo4j-community-1.7_1/bin/neo4j start`
+  def reset_neo2(instance_no)
+    if [0, 1, 2].include? instance_no
+      logger.info("neo#{instance_no} is being reset. VT")
+      `~/Development/tez/Neo4jSurumleri/neo4j-community-1.7_#{instance_no}/bin/neo4j stop`
+      `rm -r ~/Development/tez/Neo4jSurumleri/neo4j-community-1.7_#{instance_no}/data/graph.db/*`
+      `~/Development/tez/Neo4jSurumleri/neo4j-community-1.7_#{instance_no}/bin/neo4j start`
+    else
+      logger.error("There is no neo instance with no: #{instance_no}. VT")
+    end
+
   end
 
-  def reset_neo2
-    logger.info("neo2 is being reset. VT")
-    `~/Development/tez/Neo4jSurumleri/neo4j-community-1.7_2/bin/neo4j stop`
-    `rm -r ~/Development/tez/Neo4jSurumleri/neo4j-community-1.7_2/data/graph.db/*`
-    `~/Development/tez/Neo4jSurumleri/neo4j-community-1.7_2/bin/neo4j start`
+
+  def reset_neo(instance_no)
+    instance_mapping = {0=>6474, 1=>7474, 2=>8474}
+
+    if [0, 1, 2].include? instance_no
+      logger.info("neo#{instance_no} is being reset. VT")
+      port = instance_mapping[instance_no]
+      `~/Development/tez/Neo4jSurumleri/neo4j-community-1.7_#{instance_no}/bin/neo4j start`
+      `curl -X DELETE http://localhost:#{port}/db/data/cleandb/secret-key`
+    else
+      logger.error("There is no neo instance with no: #{instance_no}. VT")
+    end
+
   end
 
   def logger
