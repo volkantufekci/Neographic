@@ -71,9 +71,11 @@ class GpartController
     gpart_mapping.each_pair do |key,value|
       case value
         when 0
-          gpart_mapping[key] = 8474
+          gpart_mapping[key] = 6474
         when 1
           gpart_mapping[key] = 7474
+        when 2
+          gpart_mapping[key] = 8474
         else
           gpart_mapping[key] = 9474
       end
