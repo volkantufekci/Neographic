@@ -99,13 +99,13 @@ class PartitionControllerTest < Test::Unit::TestCase
   #  assert(!n8.exist?, "Node with gid=8 should not exist!")
   #end
 
-  def test_migrate_via_gpart_mapping
+  def test_migrate_via_gpart_for2
     logger.info("TEST_MIGRATE_VIA_GPART_MAPPING STARTED")
 
     gid_nei_h = @pc.merge_node_neighbour_hashes
     before_mapping_hash = @pc.before_mapping_hash(gid_nei_h.keys)
 
-    @gpc = GpartController.new(gid_nei_h)
+    @gpc = GpartController.new(gid_nei_h, 2)
     gpart_mapping_hash = @gpc.partition_and_return_mapping
 
     migrated_nodes = @pc.migrate_via_gpart_mapping gpart_mapping_hash, before_mapping_hash
@@ -113,6 +113,31 @@ class PartitionControllerTest < Test::Unit::TestCase
     #n1=Neography::Node.load(@pc.neo4j_instances[6474], 1)
     n1=@pc.neo4j_instances[6474].get_indexed_node(1)
     n3=@pc.neo4j_instances[6474].get_indexed_node(3)
+    n7=@pc.neo4j_instances[6474].get_indexed_node(7)
+    n8=@pc.neo4j_instances[6474].get_indexed_node(8)
+
+    assert(n1, "Node with gid=1 should exist!")
+    assert(n3, "Node with gid=3 should exist!")
+
+    assert(!n7, "Node with gid=7 should not exist!")
+    assert(!n8, "Node with gid=8 should not exist!")
+
+  end
+
+  def test_migrate_via_gpart_for3
+    logger.info("TEST_MIGRATE_VIA_GPART_MAPPING STARTED")
+
+    gid_nei_h = @pc.merge_node_neighbour_hashes
+    before_mapping_hash = @pc.before_mapping_hash(gid_nei_h.keys)
+
+    @gpc = GpartController.new(gid_nei_h, 3)
+    gpart_mapping_hash = @gpc.partition_and_return_mapping
+
+    migrated_nodes = @pc.migrate_via_gpart_mapping gpart_mapping_hash, before_mapping_hash
+
+    #n1=Neography::Node.load(@pc.neo4j_instances[6474], 1)
+    n1=@pc.neo4j_instances[7474].get_indexed_node(1)
+    n3=@pc.neo4j_instances[8474].get_indexed_node(3)
     n7=@pc.neo4j_instances[6474].get_indexed_node(7)
     n8=@pc.neo4j_instances[6474].get_indexed_node(8)
 

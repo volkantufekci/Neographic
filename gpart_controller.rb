@@ -2,9 +2,10 @@ require_relative "./configuration"
 
 class GpartController
 
-  def initialize(gid_nei_hash)
+  def initialize(gid_nei_hash, neo4j_count)
     @gid_nei_hash = gid_nei_hash
     @gpart_index_array = map_gids_to_gpart_indexes(gid_nei_hash)
+    @total_neo4j_count = neo4j_count
   end
 
   def partition_and_return_mapping
@@ -13,8 +14,8 @@ class GpartController
   end
 
   def perform_mapping
-    #TODO gpart should be called to do the mapping
-    `gpart 2 #{Configuration::GPART_GRF_PATH} #{Configuration::GPART_RESULT_PATH}`
+    neo4j_count = @total_neo4j_count
+    `gpart #{neo4j_count} #{Configuration::GPART_GRF_PATH} #{Configuration::GPART_RESULT_PATH}`
     gpart_mapping = read_gpart_result
     gpart_mapping = inject_partition_ports(gpart_mapping)
     #should return sth like {1=>1, 2=>0, 3=>1, 4=>0, 5=>0, 6=>0, 7=>1, 8=>1}
