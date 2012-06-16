@@ -1,10 +1,12 @@
 require 'neography'
 require_relative 'partition'
+require_relative 'configuration'
 
 class RelationController
 
   def initialize
     @log = Logger.new(STDOUT)
+    @log.level=Configuration::LOG_LEVEL
   end
 
   def migrate_relations_of_node(gid, from_partition, to_partition, direction)

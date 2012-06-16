@@ -1,4 +1,5 @@
 require "redis"
+require_relative 'configuration'
 
 module RedisModul
 
@@ -7,6 +8,7 @@ module RedisModul
     def initialize(dic={:host => 'localhost', :port => 6379})
       @redis = Redis.new(dic)
       @log = Logger.new(STDOUT)
+      @log.level = Configuration::LOG_LEVEL
     end
 
     def add_to_partition_list_for_node(gid, port)
@@ -15,7 +17,7 @@ module RedisModul
 
     def create_partition_list_for_node(gid, port)
       result = @redis.lpush gid, port
-      @log.info("Redis add_to_partition_list_for_node(#{gid}, #{port}) returns: #{result}. VT")
+      @log.debug("Redis add_to_partition_list_for_node(#{gid}, #{port}) returns: #{result}. VT")
       result
     end
 
@@ -26,7 +28,7 @@ module RedisModul
 
     def remove_partition_holding_real(gid)
       result = @redis.lpop gid
-      @log.info("Redis remove_partition_holding_real for gid: #{gid} returns #{result}. VT")
+      @log.debug("Redis remove_partition_holding_real for gid: #{gid} returns #{result}. VT")
       result
     end
 
@@ -38,7 +40,7 @@ module RedisModul
 
     def partitions_have_the_node(gid)
       result = @redis.lrange gid, "0", "-1"
-      @log.info("Redis partitions_have_the_node for gid:#{gid} is #{result}. VT")
+      @log.debug("Redis partitions_have_the_node for gid:#{gid} is #{result}. VT")
       result
     end
 

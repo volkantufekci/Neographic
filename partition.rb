@@ -1,5 +1,6 @@
 require 'neography'
 require '/home/vol/Development/tez/Neographic/redis_connector'
+require_relative 'configuration'
 
 class Partition < Neography::Rest
 
@@ -8,7 +9,7 @@ class Partition < Neography::Rest
   def initialize(options, redis_dic)
     super(options)
     @redis_connector = RedisConnector.new(redis_dic)
-    @logger.level=Logger::INFO
+    @logger.level=Configuration::LOG_LEVEL
   end
 
   def create_real_node(properties)
@@ -24,7 +25,7 @@ class Partition < Neography::Rest
 
     properties[:shadow] = false
     new_node = Neography::Node.create(properties, self)
-    @logger.info("Node(#{new_node.neo_id}) with global_id: #{properties[:global_id]} created in partition with port: #{self.port}")
+    @logger.debug("Node(#{new_node.neo_id}) with global_id: #{properties[:global_id]} created in partition with port: #{self.port}")
 
     self.add_node_to_index(:globalidindex, :global_id, new_node.global_id, new_node)
 
@@ -75,8 +76,8 @@ class Partition < Neography::Rest
   end
 
   def log_relation_migration(node_hash, rel, target_other_node_h)
-    other_node_title = target_other_node_h["data"]["title"]
-    node_title = node_hash["data"]["title"]
+    other_node_title = target_other_node_h["data"]["global_id"]
+    node_title = node_hash["data"]["global_id"]
     @logger.info("#{other_node_title}=>#{rel.rel_type}=>#{node_title} created")
   end
 
@@ -85,7 +86,7 @@ class Partition < Neography::Rest
 
     array = self.get_node_index(:globalidindex, :global_id, global_id_value)
     if array.nil?
-      @logger.info("Partition #{self.port} does not have a node with gid: #{global_id_value}")
+      @logger.debug("Partition #{self.port} does not have a node with gid: #{global_id_value}")
       node_h = nil
     else
       node_h = array.first

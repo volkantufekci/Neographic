@@ -100,15 +100,8 @@ class PartitionControllerTest < Test::Unit::TestCase
   #end
 
   def test_migrate_via_gpart_for2
-    logger.info("TEST_MIGRATE_VIA_GPART_MAPPING STARTED")
-
-    gid_nei_h = @pc.merge_node_neighbour_hashes
-    before_mapping_hash = @pc.before_mapping_hash(gid_nei_h.keys)
-
-    @gpc = GpartController.new(gid_nei_h, 2)
-    gpart_mapping_hash = @gpc.partition_and_return_mapping
-
-    migrated_nodes = @pc.migrate_via_gpart_mapping gpart_mapping_hash, before_mapping_hash
+    total_neo4j_count = 2
+    migrated_nodes = migrate_via_gpart(total_neo4j_count)
 
     #n1=Neography::Node.load(@pc.neo4j_instances[6474], 1)
     n1=@pc.neo4j_instances[6474].get_indexed_node(1)
@@ -125,17 +118,31 @@ class PartitionControllerTest < Test::Unit::TestCase
   end
 
   def test_migrate_via_gpart_for3
-    logger.info("TEST_MIGRATE_VIA_GPART_MAPPING STARTED")
-
-    gid_nei_h = @pc.merge_node_neighbour_hashes
-    before_mapping_hash = @pc.before_mapping_hash(gid_nei_h.keys)
-
-    @gpc = GpartController.new(gid_nei_h, 3)
-    gpart_mapping_hash = @gpc.partition_and_return_mapping
-
-    migrated_nodes = @pc.migrate_via_gpart_mapping gpart_mapping_hash, before_mapping_hash
+    total_neo4j_count = 3
+    migrated_nodes = migrate_via_gpart(total_neo4j_count)
 
     #n1=Neography::Node.load(@pc.neo4j_instances[6474], 1)
+    n1=@pc.neo4j_instances[7474].get_indexed_node(1)
+    n3=@pc.neo4j_instances[8474].get_indexed_node(3)
+    n7=@pc.neo4j_instances[6474].get_indexed_node(7)
+    n8=@pc.neo4j_instances[6474].get_indexed_node(8)
+
+    assert(n1, "Node with gid=1 should exist!")
+    assert(n3, "Node with gid=3 should exist!")
+
+    assert(!n7, "Node with gid=7 should not exist!")
+    assert(!n8, "Node with gid=8 should not exist!")
+
+  end
+
+  def test_migrate_for_2_then_3
+    total_neo4j_count = 2
+    migrate_via_gpart(total_neo4j_count)
+
+    total_neo4j_count = 3
+    migrated_nodes = migrate_via_gpart(total_neo4j_count)
+
+
     n1=@pc.neo4j_instances[7474].get_indexed_node(1)
     n3=@pc.neo4j_instances[8474].get_indexed_node(3)
     n7=@pc.neo4j_instances[6474].get_indexed_node(7)
@@ -160,7 +167,20 @@ class PartitionControllerTest < Test::Unit::TestCase
 
   ### END OF TESTS - BEGINNING OF HELPER METHODS
 
+  def migrate_via_gpart(total_neo4j_count)
+    logger.info("TEST_MIGRATE_VIA_GPART_MAPPING FOR Neo4j Count: #{total_neo4j_count} STARTED")
+
+    gid_nei_h = @pc.merge_node_neighbour_hashes
+    before_mapping_hash = @pc.before_mapping_hash(gid_nei_h.keys)
+
+    @gpc = GpartController.new(gid_nei_h, total_neo4j_count)
+    gpart_mapping_hash = @gpc.partition_and_return_mapping
+
+    migrated_nodes = @pc.migrate_via_gpart_mapping gpart_mapping_hash, before_mapping_hash
+  end
+
   def preload_neo4j (neo4j)
+    logger.info("#{self.class.to_s}##{__method__.to_s} started")
     a = neo4j.create_real_node({:title => "a"})
     b = neo4j.create_real_node({:title => "b"})
     c = neo4j.create_real_node({:title => "c"})

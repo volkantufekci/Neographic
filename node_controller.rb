@@ -1,7 +1,10 @@
+require_relative 'configuration'
+
 class NodeController
 
   def initialize
     @log = Logger.new(STDOUT)
+    @log.level = Configuration::LOG_LEVEL
   end
 
 
@@ -27,7 +30,7 @@ class NodeController
 
   end
 
-  def del_rels_to_shadows_for_node (nodes)
+  def del_rels_to_shadows_for_nodes (nodes)
     nodes.each { |node|
       @log.debug("DELETING RELATIONS TO SHADOWS FOR NODE GID:#{node.global_id}")
       # Collect relations to shadow node

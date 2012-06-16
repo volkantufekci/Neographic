@@ -5,6 +5,7 @@ require '/home/vol/Development/tez/Neographic/redis_connector'
 require '/home/vol/Development/tez/Neographic/partition'
 require_relative 'node_controller'
 require_relative 'relation_controller'
+require_relative 'configuration'
 
 module Tez
 
@@ -20,6 +21,7 @@ module Tez
         @nc = NodeController.new
         @rel_controller = RelationController.new
         @log = Logger.new(STDOUT)
+        @log.level = Configuration::LOG_LEVEL
       end
 
       def initialize_neo4j_instances(redis_dic)
@@ -46,12 +48,12 @@ module Tez
       end
 
       def migrate_via_gpart_mapping(gpart_mapping, before_mapping_hash)
-        @log.debug("Migrating Via Gpart Mapping Started")
+        @log.info("Migrating Via Gpart Mapping Started")
 
         migrated_node_shadows = []
 
         #her bir eleman icin real_node'un partitionini al
-        @log.debug "Migrating Nodes To Partitions"
+        @log.info "Migrating Nodes To Partitions"
         gpart_mapping.each { |key, value|
           gid = key
           source_partition_port = @redis_connector.real_partition_of_node(gid).to_i
@@ -67,7 +69,7 @@ module Tez
           end
         }
 
-        @log.debug("Migrating Relations Of Nodes")
+        @log.info("Migrating Relations Of Nodes")
         gpart_mapping.each { |key, value|
           gid = key
           source_partition_port = before_mapping_hash[key]
@@ -81,7 +83,7 @@ module Tez
           end
         }
 
-        @log.debug("Marking Migrated Nodes As Shadow")
+        @log.info("Marking Migrated Nodes As Shadow")
         gpart_mapping.each { |key, value|
           gid = key
           source_partition_port = before_mapping_hash[key]
@@ -92,15 +94,16 @@ module Tez
           end
         }
 
-        @nc.del_rels_to_shadows_for_node(migrated_node_shadows)
+        @log.info("Deleting Relations To Shadows")
+        @nc.del_rels_to_shadows_for_nodes(migrated_node_shadows)
 
+        @log.info("Deleting Shadows Without Relation")
         @nc.del_shadow_without_relation(migrated_node_shadows)
-
       end
 
 
       def merge_node_neighbour_hashes
-        @log.debug "Merging node=>[nei1, nei2, ...] hashes coming from partitions"
+        @log.info "Merging node=>[nei1, nei2, ...] hashes coming from partitions"
 
         final_hash = {}
         @neo4j_instances.values.each do |neo_instance|
