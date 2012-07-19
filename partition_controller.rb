@@ -25,16 +25,16 @@ module Tez
       end
 
       def initialize_neo4j_instances(redis_dic)
-        @neo0 = connect_to_neo4j_instance('localhost', 6474, redis_dic)
-        @neo1 = connect_to_neo4j_instance('localhost', 7474, redis_dic)
-        @neo2 = connect_to_neo4j_instance('localhost', 8474, redis_dic)
+        @neo0 = PartitionController.connect_to_neo4j_instance('localhost', 6474, redis_dic)
+        @neo1 = PartitionController.connect_to_neo4j_instance('localhost', 7474, redis_dic)
+        @neo2 = PartitionController.connect_to_neo4j_instance('localhost', 8474, redis_dic)
         @neo4j_instances = Hash.new
         @neo4j_instances[@neo0.port] = @neo0
         @neo4j_instances[@neo1.port] = @neo1
         @neo4j_instances[@neo2.port] = @neo2
       end
 
-      def connect_to_neo4j_instance (domain, port, redis_dic)
+      def self.connect_to_neo4j_instance (domain, port, redis_dic)
         Partition.new({:protocol => 'http://',
                              :server => domain,
                              :port => port,
@@ -108,12 +108,13 @@ module Tez
         final_hash = {}
         @neo4j_instances.values.each do |neo_instance|
           final_hash.merge!(neo_instance.collect_vertex_with_neighbour_h) { |key, oldval, newval|
-            (oldval + newval).uniq
+            (oldval + newval).uniq  #arrays merged and duplicates are eliminated
           }
         end
         final_hash
       end
 
+      #return hash whose keys are gids and values are real_partition_port of them
       def before_mapping_hash(gid_array)
         ##TODO test test test
 
