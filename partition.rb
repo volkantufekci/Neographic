@@ -137,7 +137,7 @@ class Partition < Neography::Rest
     for i in 1...vertex_gid_array.length do
       neighbour_gids = execute_script("g.V[#{i}].both.global_id")
       gid = vertex_gid_array[i]
-      hash[gid] = neighbour_gids
+      hash[gid] = neighbour_gids.uniq
     end
 
     hash
