@@ -2,6 +2,7 @@ require "test/unit"
 require_relative '../partition_controller'
 require '../redis_connector'
 require '../gpart_controller'
+require_relative '../random_graph_generator'
 
 class PartitionControllerTest < Test::Unit::TestCase
 
@@ -17,87 +18,54 @@ class PartitionControllerTest < Test::Unit::TestCase
     MiniTest::Unit.runner.reporters << MiniTest::Reporters::ProgressReporter.new
   end
 
-
   def setup
-    @redis_connector = RedisConnector.new
-    @redis_connector.remove_all
-    self.reset_neo(0)
-    self.reset_neo(1)
-    self.reset_neo(2)
-    @pc = Tez::PartitionController.new
-    preload_neo4j(@pc.neo4j_instances[6474])
+    #@redis_connector = RedisConnector.new
+    #@redis_connector.remove_all
+
+    #Bunlarin burda olmasi hata, test metoduna cekilmeli
+    #self.reset_neo(0)
+    #self.reset_neo(1)
+    #self.reset_neo(2)
+
+    #@pc = Tez::PartitionController.new
+    #preload_neo4j(@pc.neo4j_instances[6474])  #Bunun burda olmasi hata, test metoduna cekilmeli
   end
 
-  def teardown
-    # Do nothing
+  def test_partitioning_from_8474_to_6474_and_7474
+    redis_dic = {:host => 'localhost', :port => 7379}
+    @pc = Tez::PartitionController.new(redis_dic)
+    total_neo4j_count = 2
+    migrate_via_gpart(total_neo4j_count)
   end
 
-  #def test_migrate_node_to_partition
-  #  migrate_node_to_partition()
-  #
-  #  migrate_relations()
-  #
-  #  n1_migrated = @pc.neo1.get_indexed_node(1)
-  #  assert_not_nil(n1_migrated, "Node with gid:1 is not migrated!!!")
-  #
-  #  shadow_nodes()
-  #end
-  #
-  #def test_migrate_relations
-  #  migrate_node_to_partition
-  #  migrate_relations
-  #end
+=begin
+  def test_random_graph_generation
+    rgg = RandomGraphGenerator.new
+    random_node_count = 10000
+    neo4j_instance_no = 2
+    redis_dic = {:host => 'localhost', :port => 7379}
+    rgg.fill_graph_randomly(neo4j_instance_no, random_node_count, redis_dic)
 
-  #def test_shadow_nodes
-  #  logger.info("TEST_SHADOW_NODES STARTED")
-  #
-  #  migrate_nodes_to_partition
-  #  migrate_relations
-  #  n1_migrated = @pc.neo1.get_indexed_node(1)
-  #  assert_not_nil(n1_migrated, "Node with gid:1 is not migrated!!!")
-  #
-  #  shadow_nodes
-  #
-  #  n8_migrated = @pc.neo2.get_indexed_node(8)
-  #  result = n8_migrated["data"]["shadow"]
-  #  assert(result, "n8 should have been shadow but #{result}")
-  #end
+    instance_mapping = {0=>6474, 1=>7474, 2=>8474}
+    neo4j_instance = Tez::PartitionController.connect_to_neo4j_instance(
+                        'localhost', instance_mapping[neo4j_instance_no], redis_dic)
+    generated_node_count = neo4j_instance.execute_script("g.V.count()")
 
-  #def test_remove_alone_shadows
-  #  logger.info("TEST_REMOVE_ALONE_SHADOWS STARTED")
-  #
-  #  migrate_nodes_to_partition
-  #  migrate_relations
-  #  shadow_nodes
-  #
-  #  migrated_nodes = Array.new
-  #  migrated_nodes << Neography::Node.load(@pc.neo2, 1)
-  #  migrated_nodes << Neography::Node.load(@pc.neo2, 3)
-  #  migrated_nodes << Neography::Node.load(@pc.neo2, 7)
-  #  migrated_nodes << Neography::Node.load(@pc.neo2, 8)
-  #
-  #  migrated_nodes.each { |node| @pc.del_rels_to_shadows_for_node(node) }
-  #
-  #
-  #  n1=Neography::Node.load(@pc.neo2, 1)
-  #  n3=Neography::Node.load(@pc.neo2, 3)
-  #  n7=Neography::Node.load(@pc.neo2, 7)
-  #  n8=Neography::Node.load(@pc.neo2, 8)
-  #  migrated_nodes = Array.new
-  #  migrated_nodes << n1 << n3 << n7 << n8
-  #
-  #  migrated_nodes.each { |node|
-  #    unless @pc.has_any_relation?(node)
-  #      node.del
-  #    end
-  #  }
-  #
-  #  assert(n1.exist?, "Node with gid=1 should exist!")
-  #  assert(n3.exist?, "Node with gid=3 should exist!")
-  #
-  #  assert(!n7.exist?, "Node with gid=7 should not exist!")
-  #  assert(!n8.exist?, "Node with gid=8 should not exist!")
-  #end
+    assert(random_node_count + 1 == generated_node_count,
+           "Expected node count(#{random_node_count+1}) is not equal to actual node count(#{generated_node_count})")
+  end
+
+
+  def test_partitioning_random_generated_graph
+    rgg = RandomGraphGenerator.new
+    rgg.fill_graph_randomly(0, 10000, {})
+
+    self.reset_neo(1)   #0, wiki verileri ile dolu, reset'e gerek yok
+    self.reset_neo2(2)   #0, wiki verileri ile dolu, reset'e gerek yok
+    total_neo4j_count = 2
+    migrate_via_gpart(total_neo4j_count)
+  end
+
 
   def test_migrate_via_gpart_for2
     total_neo4j_count = 2
@@ -156,14 +124,8 @@ class PartitionControllerTest < Test::Unit::TestCase
 
   end
 
-  #def test_merge_node_nei_hashes
-  #  logger.info("TEST_MERGE_NODE_NEIG_HASHES STARTED")
-  #
-  #  actual = @pc.merge_node_neighbour_hashes
-  #  expected = {1=>[2, 3], 2=>[1, 3, 4, 5], 3=>[1, 2, 5, 7, 8], 4=>[2], 5=>[2, 3, 6], 6=>[5], 7=>[3], 8=>[3]}
-  #  assert_equal(expected, actual, "neighbour hash is not correct!")
-  #  logger.debug("actual:   #{actual} \n expected: #{expected}")
-  #end
+=end
+
 
   ### END OF TESTS - BEGINNING OF HELPER METHODS
 
@@ -258,5 +220,82 @@ class PartitionControllerTest < Test::Unit::TestCase
     @logger.level=Logger::INFO
     @logger
   end
+
+
+  #def test_merge_node_nei_hashes
+  #  logger.info("TEST_MERGE_NODE_NEIG_HASHES STARTED")
+  #
+  #  actual = @pc.merge_node_neighbour_hashes
+  #  expected = {1=>[2, 3], 2=>[1, 3, 4, 5], 3=>[1, 2, 5, 7, 8], 4=>[2], 5=>[2, 3, 6], 6=>[5], 7=>[3], 8=>[3]}
+  #  assert_equal(expected, actual, "neighbour hash is not correct!")
+  #  logger.debug("actual:   #{actual} \n expected: #{expected}")
+  #end
+
+  #def test_migrate_node_to_partition
+  #  migrate_node_to_partition()
+  #
+  #  migrate_relations()
+  #
+  #  n1_migrated = @pc.neo1.get_indexed_node(1)
+  #  assert_not_nil(n1_migrated, "Node with gid:1 is not migrated!!!")
+  #
+  #  shadow_nodes()
+  #end
+  #
+  #def test_migrate_relations
+  #  migrate_node_to_partition
+  #  migrate_relations
+  #end
+
+  #def test_shadow_nodes
+  #  logger.info("TEST_SHADOW_NODES STARTED")
+  #
+  #  migrate_nodes_to_partition
+  #  migrate_relations
+  #  n1_migrated = @pc.neo1.get_indexed_node(1)
+  #  assert_not_nil(n1_migrated, "Node with gid:1 is not migrated!!!")
+  #
+  #  shadow_nodes
+  #
+  #  n8_migrated = @pc.neo2.get_indexed_node(8)
+  #  result = n8_migrated["data"]["shadow"]
+  #  assert(result, "n8 should have been shadow but #{result}")
+  #end
+
+  #def test_remove_alone_shadows
+  #  logger.info("TEST_REMOVE_ALONE_SHADOWS STARTED")
+  #
+  #  migrate_nodes_to_partition
+  #  migrate_relations
+  #  shadow_nodes
+  #
+  #  migrated_nodes = Array.new
+  #  migrated_nodes << Neography::Node.load(@pc.neo2, 1)
+  #  migrated_nodes << Neography::Node.load(@pc.neo2, 3)
+  #  migrated_nodes << Neography::Node.load(@pc.neo2, 7)
+  #  migrated_nodes << Neography::Node.load(@pc.neo2, 8)
+  #
+  #  migrated_nodes.each { |node| @pc.del_rels_to_shadows_for_node(node) }
+  #
+  #
+  #  n1=Neography::Node.load(@pc.neo2, 1)
+  #  n3=Neography::Node.load(@pc.neo2, 3)
+  #  n7=Neography::Node.load(@pc.neo2, 7)
+  #  n8=Neography::Node.load(@pc.neo2, 8)
+  #  migrated_nodes = Array.new
+  #  migrated_nodes << n1 << n3 << n7 << n8
+  #
+  #  migrated_nodes.each { |node|
+  #    unless @pc.has_any_relation?(node)
+  #      node.del
+  #    end
+  #  }
+  #
+  #  assert(n1.exist?, "Node with gid=1 should exist!")
+  #  assert(n3.exist?, "Node with gid=3 should exist!")
+  #
+  #  assert(!n7.exist?, "Node with gid=7 should not exist!")
+  #  assert(!n8.exist?, "Node with gid=8 should not exist!")
+  #end
 
 end
