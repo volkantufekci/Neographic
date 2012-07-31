@@ -20,6 +20,8 @@ class IrbdeDenenler
   end
 
   def gremlin_examples
+    #x=[]
+    #g.v(145).out.loop(1){it.loops<10}{it.loops<10}.fill(x)
     #gremlin = @neo.execute_script("g.v(2).out('Link').title")
 
     #timeout aliyor
