@@ -9,7 +9,6 @@ class HttpartyDeneme
   def initialize
     @redis_dic = {:host => 'localhost', :port => 7379}  #test_port: 7379
     @redis_connector = RedisModul::RedisConnector.new(@redis_dic)
-    @domain = "localhost"
     @domain_map = {"6474" => "ec2-50-16-182-152.compute-1.amazonaws.com",
                    "7474" => "ec2-107-20-70-72.compute-1.amazonaws.com",
                    "8474" => "107.22.214.211"}
@@ -97,7 +96,7 @@ class HttpartyDeneme
 
   def find_real_partition_of_node(gid)
     partition_port = @redis_connector.real_partition_of_node(gid).to_i
-    partition_real = Tez::PartitionController.connect_to_neo4j_instance(@domain, partition_port, @redis_dic)
+    partition_real = Tez::PartitionController.connect_to_neo4j_instance(@domain_map[partition_port], partition_port, @redis_dic)
   end
 
   def find_lid_from_partition(gid, real_partition)
