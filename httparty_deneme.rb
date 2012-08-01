@@ -10,6 +10,13 @@ class HttpartyDeneme
     @redis_dic = {:host => 'localhost', :port => 7379}  #test_port: 7379
     @redis_connector = RedisModul::RedisConnector.new(@redis_dic)
     @domain = "localhost"
+    @domain_map = {"6474" => "ec2-50-16-182-152.compute-1.amazonaws.com",
+                   "7474" => "ec2-107-20-70-72.compute-1.amazonaws.com",
+                   "8474" => "107.22.214.211"}
+
+    #@domain_map = {"6474" => "localhost",
+    #               "7474" => "localhost",
+    #               "8474" => "localhost"}
   end
 
   def execute_script(script, server, port)
@@ -23,7 +30,7 @@ class HttpartyDeneme
     real_partition = find_real_partition_of_node(gid)
     lid = find_lid_from_partition(gid, real_partition)
     script = "x=0;g.v(#{lid}).out.loop(1){it.loops<#{out_count}}{true}.paths({h=[];h[0]=it.global_id;h[1]= it.shadow;h})"
-    result = execute_script(script, @domain, "6474").parsed_response
+    result = execute_script(script, @domain_map["6474"], "6474").parsed_response
 
     recursive_result = run_again_for_shadows(out_count, result)
   end
@@ -35,6 +42,13 @@ class HttpartyDeneme
         puts "hede #{array.flatten}"
       end
     }
+  end
+
+  def execute_on_valid_partition(gid, out_count)
+    valid_partition = Tez::PartitionController.connect_to_neo4j_instance(@domain_map["8474"], 8474, @redis_dic)
+    lid = valid_partition.get_indexed_node(gid)["self"].split('/').last #local_id
+    script3 = "x=0;g.v(#{lid}).out.loop(1){it.loops<#{out_count}}{true}.paths({h=[];h[0]=it.global_id;h[1]= it.shadow;h})"
+    result_from_valid_partition = execute_script(script3, @domain_map["8474"], "8474").parsed_response
   end
 
   def filter_intermediate_paths(out_count, recursive_result)
@@ -51,6 +65,7 @@ class HttpartyDeneme
     filtered_results
   end
 
+  private
   def run_again_for_shadows(out_count, result)
     sayko_array =[]
     result.each { |array|
@@ -62,7 +77,8 @@ class HttpartyDeneme
 
         new_out_count = out_count - array.size + 1
         script_for_real = "g.v(#{lid}).out.loop(1){it.loops<#{new_out_count}}{true}.paths({h=[];h[0]=it.global_id; h[1]= it.shadow;h})"
-        new_result = execute_script(script_for_real, @domain, partition_real.port).parsed_response
+        new_result = execute_script(script_for_real, @domain_map[partition_real.port.to_s],
+                                    partition_real.port).parsed_response
 
         array.pop
         new_sayko_array = run_again_for_shadows(new_out_count, new_result)
@@ -88,12 +104,6 @@ class HttpartyDeneme
     lid = real_partition.get_indexed_node(gid)["self"].split('/').last
   end
 
-  def execute_on_valid_partition(gid, out_count)
-    valid_partition = Tez::PartitionController.connect_to_neo4j_instance(@domain, 8474, @redis_dic)
-    lid = valid_partition.get_indexed_node(gid)["self"].split('/').last #local_id
-    script3 = "x=0;g.v(#{lid}).out.loop(1){it.loops<#{out_count}}{true}.paths({h=[];h[0]=it.global_id;h[1]= it.shadow;h})"
-    result_from_valid_partition = execute_script(script3, @domain, "8474").parsed_response
-  end
 end
 
 ht = HttpartyDeneme.new
