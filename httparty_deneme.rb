@@ -96,7 +96,8 @@ class HttpartyDeneme
 
   def find_real_partition_of_node(gid)
     partition_port = @redis_connector.real_partition_of_node(gid).to_i
-    partition_real = Tez::PartitionController.connect_to_neo4j_instance(@domain_map[partition_port], partition_port, @redis_dic)
+    partition_real = Tez::PartitionController.connect_to_neo4j_instance(@domain_map[partition_port.to_s],
+                                                                        partition_port, @redis_dic)
   end
 
   def find_lid_from_partition(gid, real_partition)
