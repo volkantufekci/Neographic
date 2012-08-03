@@ -4,6 +4,9 @@ class HttpartyDenemeTest
   attr_accessor :result_h
 
   def initialize(thread_count)
+    @logger ||= Logger.new(STDOUT)
+    @logger.level=Logger::INFO
+
     @result_h = {}
     @thread_count = thread_count - 1
   end
@@ -17,24 +20,23 @@ class HttpartyDenemeTest
         ht = HttpartyDeneme.new
         out_count = 5
         gid = rand(1..1000)
-        puts "random gid: #{gid}"
-
+        @logger.debug "#{__method__.to_s} random gid: #{gid}"
 
         results_from_partitioned = ht.filter_intermediate_paths(out_count, ht.analyze(gid, out_count))
-        puts "results_from_partitioned.size = #{results_from_partitioned.size}"
+        @logger.debug "#{__method__.to_s} results_from_partitioned.size = #{results_from_partitioned.size}"
 
         @result_h[Thread.current.inspect] = results_from_partitioned
       end
 
-      puts "#{i} started"
+      @logger.debug "#{__method__.to_s} #{i} started"
     }
 
-    puts "Waiting all threads to finish"
+    @logger.info "Waiting all threads to finish"
     Thread.list.each { |t| t.join unless t == Thread.main or t == Thread.current }
-    puts "All threads should have been finished"
+    @logger.info "All threads should have been finished"
 
-    puts @result_h.size
-    p Time.now - start
+    @logger.debug "#{__method__.to_s} thread count: #{@result_h.size}"
+    @logger.info Time.now - start
   end
 
   def test_nonpartitioned
@@ -57,12 +59,12 @@ class HttpartyDenemeTest
       puts "#{i} started"
     }
 
-    puts "Waiting all threads to finish"
+    @logger.info "Waiting all threads to finish"
     Thread.list.each { |t| t.join unless t == Thread.main or t == Thread.current }
-    puts "All threads should have been finished"
+    @logger.info "All threads should have been finished"
 
-    puts @result_h.size
-    p Time.now - start
+    @logger.debug "#{__method__.to_s} thread count: #{@result_h.size}"
+    @logger.info Time.now - start
   end
 end
 
