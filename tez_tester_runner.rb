@@ -11,13 +11,17 @@ class TezTesterRunner
   end
 
   def test_threaded_partitioning
-    t = TezTesterRunner.new 5
+    @logger.info "Same gid for every thread"
     gid = rand(1..1000)
-    t.threaded_partitioning(gid, "partitioned") { |ht, gid, out_count| ht.analyze(gid, out_count) }
-    t.threaded_partitioning(gid, "NONpartitioned") { |ht, gid, out_count| ht.execute_on_valid_partition(gid, out_count) }
+    threaded_partitioning(gid, "partitioned") { |ht, gid, out_count| ht.analyze(gid, out_count) }
+    threaded_partitioning(gid, "NONpartitioned") { |ht, gid, out_count| ht.execute_on_valid_partition(gid, out_count) }
+
+    @logger.info "Random gid for every thread"
+    threaded_partitioning(nil, "partitioned") { |ht, gid, out_count| ht.analyze(gid, out_count) }
+    threaded_partitioning(nil, "NONpartitioned") { |ht, gid, out_count| ht.execute_on_valid_partition(gid, out_count) }
   end
 
-  def threaded_partitioning(gid, title_for_log)
+  def threaded_partitioning(gid_param, title_for_log)
     start = Time.now
     @result_h = {}
 
@@ -25,6 +29,11 @@ class TezTesterRunner
       Thread.new do
         ht = TezTester.new
         out_count = 5
+        if gid_param
+          gid = gid_param
+        else
+          gid = rand(1..1000)
+        end
         @logger.debug "#{title_for_log} random gid: #{gid}"
 
         result = ht.filter_intermediate_paths(out_count, yield(ht, gid, out_count))
@@ -48,7 +57,7 @@ class TezTesterRunner
 
 end
 
-t = TezTesterRunner.new 5
+t = TezTesterRunner.new 2
 t.test_threaded_partitioning
 
 
