@@ -20,6 +20,8 @@ class RandomGraphGenerator
 
   end
 
+  private
+
   def create_random_edges(neo4j_instance, node_array)
     node_array_count = node_array.count
     node_array.each { |source_node|

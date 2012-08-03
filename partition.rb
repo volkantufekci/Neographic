@@ -1,5 +1,5 @@
 require 'neography'
-require '/home/vol/Development/tez/Neographic/redis_connector'
+require './redis_connector'
 require_relative 'configuration'
 
 class Partition < Neography::Rest

@@ -79,7 +79,7 @@ class HttpartyDeneme
         new_result = execute_script(script_for_real, @domain_map[partition_real.port.to_s],
                                     partition_real.port).parsed_response
 
-        array.pop
+        array.pop #remove the shadow element which will be replaced by its real and its outVertices
         new_sayko_array = run_again_for_shadows(new_out_count, new_result)
         new_sayko_array.each { |arraycik|
           copy_array = array.compact  #compact is used just to create a copy of array
@@ -108,7 +108,6 @@ end
 
 ht = HttpartyDeneme.new
 out_count = 5
-#gid = 272
 gid = rand(1..1000)
 puts "random gid: #{gid}"
 
