@@ -51,7 +51,7 @@ class HttpartyDenemeTest
         puts "random gid: #{gid}"
 
         results_from_nonpartitioned = ht.filter_intermediate_paths(out_count, ht.execute_on_valid_partition(gid, out_count))
-        puts "results_from_nonpartitioned.size = #{results_from_nonpartitioned.size}"
+        @logger.debug "#{__method__.to_s} results_from_nonpartitioned.size = #{results_from_nonpartitioned.size}"
 
         @result_h[Thread.current.inspect] = results_from_nonpartitioned
       end
