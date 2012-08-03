@@ -11,7 +11,7 @@ class HttpartyDeneme
     @redis_connector = RedisModul::RedisConnector.new(@redis_dic)
     @domain_map = {"6474" => "ec2-50-16-182-152.compute-1.amazonaws.com",
                    "7474" => "ec2-107-20-70-72.compute-1.amazonaws.com",
-                   "8474" => "107.22.214.211"}
+                   "8474" => "ec2-50-19-27-130.compute-1.amazonaws.com"}
 
     #@domain_map = {"6474" => "localhost",
     #               "7474" => "localhost",
