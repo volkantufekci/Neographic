@@ -7,6 +7,9 @@ class HttpartyDeneme
   include HTTParty
 
   def initialize
+    @logger ||= Logger.new(STDOUT)
+    @logger.level=Logger::INFO
+
     @redis_dic = {:host => 'localhost', :port => 7379}  #test_port: 7379
     @redis_connector = RedisModul::RedisConnector.new(@redis_dic)
     @domain_map = {"6474" => "ec2-50-16-182-152.compute-1.amazonaws.com",
@@ -60,7 +63,7 @@ class HttpartyDeneme
         i = i + 1
       end
     }
-    puts "#{i} paths"
+    @logger.debug "#{i} paths"
     filtered_results
   end
 
@@ -106,6 +109,7 @@ class HttpartyDeneme
 
 end
 
+=begin
 ht = HttpartyDeneme.new
 out_count = 5
 gid = rand(1..1000)
@@ -121,6 +125,9 @@ results_from_partitioned = ht.filter_intermediate_paths(out_count, ht.analyze(gi
 puts "results_from_partitioned.size = #{results_from_partitioned.size}"
 #ht.differentiate_from_valid_partition(gid, filtered_results, out_count)
 p Time.now - start
+=end
+
+
 
 #random_node = rand(1000)
 #response = ht.execute_script("g.v(#{random_node}).out")
