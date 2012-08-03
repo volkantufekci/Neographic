@@ -1,9 +1,9 @@
 require "httparty"
 require "json"
-require_relative './partition_controller'
-require_relative './redis_connector'
+require './partition_controller'
+require './redis_connector'
 
-class HttpartyDeneme
+class TezTester
   include HTTParty
 
   def initialize
@@ -126,26 +126,3 @@ puts "results_from_partitioned.size = #{results_from_partitioned.size}"
 #ht.differentiate_from_valid_partition(gid, filtered_results, out_count)
 p Time.now - start
 =end
-
-
-
-#random_node = rand(1000)
-#response = ht.execute_script("g.v(#{random_node}).out")
-#result_h = {}
-#puts Thread.current.inspect
-#result_h[Thread.current.inspect] = response
-#puts "hede"
-
-#15/7/2012
-#ht.execute_script('g.v(145).out.loop(1){it.loops<3}.transform{[it.global_id,it.shadow]}').parsed_response
-#ht.execute_script('x=0;g.v(145).sideEffect{x=x+1}.out.loop(2){it.loops<3}{true}.transform{[it.id,it.shadow,x]}').parsed_response
-
-#23/7/2012 oncesi
-#script2 = "x=0;g.v(#{lid}).sideEffect{x=x+1}.out.loop(2){it.loops<2}{true}.transform{[it.global_id,it.shadow,x]}"
-
-
-#response.each { |node_hash|
-#  id = node_hash["self"].split('/').last
-#  #h[id] = node_hash
-#  h << id
-#}
