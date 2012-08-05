@@ -5,7 +5,10 @@ class TezTesterRunner
 
   def initialize(thread_count)
     @logger ||= Logger.new(STDOUT)
-    @logger.level=Logger::DEBUG
+    @logger.level=Logger::INFO
+
+    @logger_to_file ||= Logger.new("logv.txt")
+    @logger_to_file.level=Logger::DEBUG
 
     @thread_count = thread_count - 1
   end
@@ -20,6 +23,8 @@ class TezTesterRunner
     threaded_partitioning(nil, "partitioned") { |ht, gid, out_count| ht.analyze(gid, out_count) }
     threaded_partitioning(nil, "NONpartitioned") { |ht, gid, out_count| ht.execute_on_valid_partition(gid, out_count) }
   end
+
+  private
 
   def threaded_partitioning(gid_param, title_for_log)
     start = Time.now
@@ -38,6 +43,7 @@ class TezTesterRunner
 
         result = ht.filter_intermediate_paths(out_count, yield(ht, gid, out_count))
         @logger.debug "#{title_for_log} results_from_partitioned.size = #{result.size}"
+        log_to_file(result)
 
         @result_h[Thread.current.inspect] = result
       end
@@ -55,6 +61,11 @@ class TezTesterRunner
     @logger.info Time.now - start
   end
 
+  def log_to_file(result_a)
+    message = "\n"
+    result_a.each { |array| message << "#{array}\n" }
+    @logger_to_file.debug message
+  end
 end
 
 t = TezTesterRunner.new 2
