@@ -6,7 +6,8 @@ class RandomGraphGenerator
   def fill_graph_randomly(neo4j_instance_no, random_node_count, redis_dic)
     RedisModul::RedisConnector.new(redis_dic).remove_all
 
-    self.reset_neo(neo4j_instance_no)
+    #calismiyor
+    #reset_neo(neo4j_instance_no)
 
     instance_mapping = {0=>6474, 1=>7474, 2=>8474}
     neo4j_instance = Tez::PartitionController.connect_to_neo4j_instance(
@@ -29,7 +30,11 @@ class RandomGraphGenerator
       target_node_ids = []
 
       2.times { |i|
-        random_id = rand(node_array_count - 1)
+        if index < node_array_count / 2
+          random_id = rand(node_array_count / 2 - 1)
+        else
+          random_id = rand(node_array_count / 2 - 1) + (node_array_count - 1) / 2
+        end
         unless target_node_ids.include?(random_id) or index == random_id
           target_node_ids << random_id
           target_node = node_array[random_id]
@@ -52,6 +57,7 @@ class RandomGraphGenerator
   end
 
   def reset_neo(instance_no)
+    # did not work for 8474 3.8.2012
     instance_mapping = {0=>6474, 1=>7474, 2=>8474}
 
     if [0, 1, 2].include? instance_no
