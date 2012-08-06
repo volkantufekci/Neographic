@@ -19,6 +19,8 @@ class TezTesterRunner
     threaded_partitioning(gid, "partitioned") { |ht, gid, out_count| ht.analyze(gid, out_count) }
     threaded_partitioning(gid, "NONpartitioned") { |ht, gid, out_count| ht.execute_on_valid_partition(gid, out_count) }
 
+    puts "\n"
+
     @logger.info "Random gid for every thread"
     threaded_partitioning(nil, "partitioned") { |ht, gid, out_count| ht.analyze(gid, out_count) }
     threaded_partitioning(nil, "NONpartitioned") { |ht, gid, out_count| ht.execute_on_valid_partition(gid, out_count) }
