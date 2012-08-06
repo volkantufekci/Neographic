@@ -32,7 +32,7 @@ class PartitionControllerTest < Test::Unit::TestCase
   end
 
   #def test_partitioning_from_8474_to_6474_and_7474
-  #  redis_dic = {:host => 'localhost', :port => 7379}
+  #  redis_dic = {:host => 'localhost', :port => 6379}
   #  @pc = Tez::PartitionController.new(redis_dic)
   #  total_neo4j_count = 2
   #  migrate_via_gpart(total_neo4j_count)
@@ -45,9 +45,9 @@ class PartitionControllerTest < Test::Unit::TestCase
     reset_neo2(2)
 
     rgg = RandomGraphGenerator.new
-    random_node_count = 10000
+    random_node_count = 10
     neo4j_instance_no = 2
-    redis_dic = {:host => 'localhost', :port => 7379}
+    redis_dic = {:host => 'localhost', :port => 6379}
     rgg.fill_graph_randomly(neo4j_instance_no, random_node_count, redis_dic)
 
     instance_mapping = {0=>6474, 1=>7474, 2=>8474}
@@ -58,10 +58,11 @@ class PartitionControllerTest < Test::Unit::TestCase
     assert(random_node_count + 1 == generated_node_count,
            "Expected node count(#{random_node_count+1}) is not equal to actual node count(#{generated_node_count})")
 
-    `cp -r ~/Development/tez/Neo4jSurumleri/neo4j-community-1.7_2/data/graph.db ~/graphdb10k`
+    #`~/Development/tez/Neo4jSurumleri/neo4j-community-1.7_2/bin/neo4j stop`
+    #`cp -r ~/Development/tez/Neo4jSurumleri/neo4j-community-1.7_2/data/graph.db ~/graphdb10k`
+    #`~/Development/tez/Neo4jSurumleri/neo4j-community-1.7_2/bin/neo4j start`
 
     #### Aslinda burasi test_partitioning_from_8474_to_6474_and_7474 metodunda
-      redis_dic = {:host => 'localhost', :port => 7379}
       @pc = Tez::PartitionController.new(redis_dic)
       total_neo4j_count = 2
       migrate_via_gpart(total_neo4j_count)
@@ -144,13 +145,13 @@ class PartitionControllerTest < Test::Unit::TestCase
   def migrate_via_gpart(total_neo4j_count)
     logger.info("TEST_MIGRATE_VIA_GPART_MAPPING FOR Neo4j Count: #{total_neo4j_count} STARTED")
 
-    gid_nei_h = @pc.merge_node_neighbour_hashes
+    gid_nei_h           = @pc.merge_node_neighbour_hashes
     before_mapping_hash = @pc.before_mapping_hash(gid_nei_h.keys)
 
-    @gpc = GpartController.new(gid_nei_h, total_neo4j_count)
-    gpart_mapping_hash = @gpc.partition_and_return_mapping
+    @gpc                = GpartController.new(gid_nei_h, total_neo4j_count)
+    gpart_mapping_hash  = @gpc.partition_and_return_mapping
 
-    migrated_nodes = @pc.migrate_via_gpart_mapping gpart_mapping_hash, before_mapping_hash
+    migrated_nodes      = @pc.migrate_via_gpart_mapping gpart_mapping_hash, before_mapping_hash
   end
 
   def preload_neo4j (neo4j)
