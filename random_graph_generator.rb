@@ -49,7 +49,7 @@ class RandomGraphGenerator
   end
 
   def create_random_nodes(neo4j_instance, random_node_count)
-    @log.info("#{self.class.to_s}##{__method__.to_s} started")
+    logger.info("#{self.class.to_s}##{__method__.to_s} started")
     node_array = []
 
     1.upto(random_node_count) { |i|
