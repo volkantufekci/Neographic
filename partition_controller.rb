@@ -25,13 +25,14 @@ module Tez
       end
 
       def initialize_neo4j_instances(redis_dic)
-        @neo0 = PartitionController.connect_to_neo4j_instance('localhost', 6474, redis_dic)
-        @neo1 = PartitionController.connect_to_neo4j_instance('localhost', 7474, redis_dic)
-        @neo2 = PartitionController.connect_to_neo4j_instance('localhost', 8474, redis_dic)
         @neo4j_instances = Hash.new
-        @neo4j_instances[@neo0.port] = @neo0
-        @neo4j_instances[@neo1.port] = @neo1
-        @neo4j_instances[@neo2.port] = @neo2
+
+        domain_map = Configuration::DOMAIN_MAP
+        domain_map.keys.each do |port|
+          neo_instance = PartitionController.connect_to_neo4j_instance(domain_map[port], port.to_i, redis_dic)
+          @neo4j_instances[neo_instance.port] = neo_instance
+        end
+
       end
 
       def self.connect_to_neo4j_instance (domain, port, redis_dic)
