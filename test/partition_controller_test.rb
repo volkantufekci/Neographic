@@ -40,9 +40,9 @@ class PartitionControllerTest < Test::Unit::TestCase
 
 
   def test_random_graph_generation
-    reset_neo(0)
-    reset_neo(1)
-    reset_neo2(2)
+    #reset_neo(0)
+    #reset_neo(1)
+    #reset_neo2(2)
 
     rgg = RandomGraphGenerator.new
     random_node_count = 10
@@ -51,8 +51,11 @@ class PartitionControllerTest < Test::Unit::TestCase
     rgg.fill_graph_randomly(neo4j_instance_no, random_node_count, redis_dic)
 
     instance_mapping = {0=>6474, 1=>7474, 2=>8474}
+    port = instance_mapping[neo4j_instance_no]
+    domain_map = Configuration::DOMAIN_MAP
     neo4j_instance = Tez::PartitionController.connect_to_neo4j_instance(
-                        'localhost', instance_mapping[neo4j_instance_no], redis_dic)
+        domain_map[port.to_s], port, redis_dic)
+
     generated_node_count = neo4j_instance.execute_script("g.V.count()")
 
     assert(random_node_count + 1 == generated_node_count,
