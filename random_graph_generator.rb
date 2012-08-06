@@ -1,5 +1,6 @@
 require_relative 'redis_connector'
 require_relative 'partition_controller'
+require_relative './configuration'
 
 class RandomGraphGenerator
 
@@ -10,8 +11,10 @@ class RandomGraphGenerator
     #reset_neo(neo4j_instance_no)
 
     instance_mapping = {0=>6474, 1=>7474, 2=>8474}
+    port = instance_mapping[neo4j_instance_no]
+    domain_map = Configuration::DOMAIN_MAP
     neo4j_instance = Tez::PartitionController.connect_to_neo4j_instance(
-                        'localhost', instance_mapping[neo4j_instance_no], redis_dic)
+                        domain_map[port.to_s], port, redis_dic)
 
     neo4j_instance.create_node_index(:knows)
     neo4j_instance.create_node_index(:shadows)
