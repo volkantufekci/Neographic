@@ -2,6 +2,7 @@ require "httparty"
 require "json"
 require './partition_controller'
 require './redis_connector'
+require './configuration'
 
 class TezTester
   include HTTParty
@@ -12,13 +13,8 @@ class TezTester
 
     @redis_dic = {:host => 'localhost', :port => 7379}  #test_port: 7379
     @redis_connector = RedisModul::RedisConnector.new(@redis_dic)
-    @domain_map = {"6474" => "ec2-50-16-182-152.compute-1.amazonaws.com",
-                   "7474" => "ec2-107-20-70-72.compute-1.amazonaws.com",
-                   "8474" => "ec2-50-19-27-130.compute-1.amazonaws.com"}
 
-    #@domain_map = {"6474" => "localhost",
-    #               "7474" => "localhost",
-    #               "8474" => "localhost"}
+    @domain_map = Configuration::DOMAIN_MAP
   end
 
   def execute_script(script, server, port)
@@ -32,7 +28,7 @@ class TezTester
     real_partition = find_real_partition_of_node(gid)
     lid = find_lid_from_partition(gid, real_partition)
     script = "x=0;g.v(#{lid}).out.loop(1){it.loops<#{out_count}}{true}.paths({h=[];h[0]=it.global_id;h[1]= it.shadow;h})"
-    result = execute_script(script, @domain_map["6474"], "6474").parsed_response
+    result = execute_script(script, @domain_map[real_partition.port.to_s], real_partition.port).parsed_response
 
     recursive_result = run_again_for_shadows(out_count, result)
   end
