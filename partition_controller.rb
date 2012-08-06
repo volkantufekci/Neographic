@@ -103,7 +103,8 @@ module Tez
 
 
       def merge_node_neighbour_hashes
-        @log.info "Merging node=>[nei1, nei2, ...] hashes coming from partitions"
+        # "Merging node=>[nei1, nei2, ...] hashes coming from partitions"
+        @log.info("#{self.class.to_s}##{__method__.to_s} started")
 
         final_hash = {}
         @neo4j_instances.values.each do |neo_instance|
@@ -116,6 +117,7 @@ module Tez
 
       #return hash whose keys are gids and values are real_partition_port of them
       def before_mapping_hash(gid_array)
+        @log.info "BEFORE_MAPPING_HASH"
         ##TODO test test test
 
         hash = Hash.new

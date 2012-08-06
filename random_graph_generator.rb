@@ -24,17 +24,20 @@ class RandomGraphGenerator
   private
 
   def create_random_edges(neo4j_instance, node_array)
+    logger.info("CREATE_RANDOM_EDGES")
     node_array_count = node_array.count
     node_array.each { |source_node|
       index = node_array.index(source_node)
+      logger.debug "Edges are being created for node with idx: #{index}"
       target_node_ids = []
 
       2.times { |i|
-        if index < node_array_count / 2
-          random_id = rand(node_array_count / 2 - 1)
-        else
-          random_id = rand(node_array_count / 2 - 1) + (node_array_count - 1) / 2
-        end
+        #if index < node_array_count / 2
+        #  random_id = rand(node_array_count / 2 - 1)
+        #else
+        #  random_id = rand(node_array_count / 2 - 1) + (node_array_count - 1) / 2
+        #end
+        random_id = rand(node_array_count - 1)
         unless target_node_ids.include?(random_id) or index == random_id
           target_node_ids << random_id
           target_node = node_array[random_id]
@@ -46,6 +49,7 @@ class RandomGraphGenerator
   end
 
   def create_random_nodes(neo4j_instance, random_node_count)
+    @log.info("#{self.class.to_s}##{__method__.to_s} started")
     node_array = []
 
     1.upto(random_node_count) { |i|

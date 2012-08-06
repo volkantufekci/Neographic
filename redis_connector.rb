@@ -34,7 +34,7 @@ module RedisModul
 
     def new_global_id
       result = @redis.incr :global_neo4j_id
-      @log.info("Redis created new gid: #{result}")
+      @log.debug("Redis created new gid: #{result}")
       result
     end
 

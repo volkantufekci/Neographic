@@ -12,6 +12,7 @@ class GpartController
   end
 
   def partition_and_return_mapping
+    @log.info "PARTITION_AND_RETURN_MAPPING"
     self.build_grf_file
     self.perform_mapping
   end
@@ -82,6 +83,7 @@ class GpartController
   end
 
   def inject_partition_ports(gpart_mapping)
+    @log.info("#{self.class.to_s}##{__method__.to_s} started")
     #0, 1'leri 7474 8474 gibi portlarla degistir
     gpart_mapping.each_pair do |key,value|
       case value

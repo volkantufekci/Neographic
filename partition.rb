@@ -15,7 +15,7 @@ class Partition < Neography::Rest
   def create_real_node(properties)
     #if properties include global_id that means this is a migrate process
     if properties[:global_id]
-      @logger.info("Node with global_id: #{properties[:global_id]} will be migrated to partition: #{self.port}")
+      @logger.debug("Node with global_id: #{properties[:global_id]} will be migrated to partition: #{self.port}")
     else
       global_id = @redis_connector.new_global_id
       properties[:global_id] = global_id
@@ -45,7 +45,7 @@ class Partition < Neography::Rest
     self.set_node_properties(new_shadow_node_hash, {:shadow => true})
     self.add_to_shadow_index(new_shadow_node_hash)
 
-    @logger.info("Shadow node with global_id: #{node.global_id} is created ")
+    @logger.debug("Shadow node with global_id: #{node.global_id} is created ")
     new_shadow_node_hash
   end
 
@@ -78,7 +78,7 @@ class Partition < Neography::Rest
   def log_relation_migration(node_hash, rel, target_other_node_h)
     other_node_title = target_other_node_h["data"]["global_id"]
     node_title = node_hash["data"]["global_id"]
-    @logger.info("#{other_node_title}=>#{rel.rel_type}=>#{node_title} created")
+    @logger.debug("#{other_node_title}=>#{rel.rel_type}=>#{node_title} created")
   end
 
   def get_indexed_node(global_id_value)
@@ -100,12 +100,12 @@ class Partition < Neography::Rest
     shadow_node_hash = self.get_indexed_node(old_real_node.global_id)
     shadow_node_id = shadow_node_hash["self"].split('/').last
 
-    @logger.info("There is shadow_node with id=#{shadow_node_id}")
+    @logger.debug("There is shadow_node with id=#{shadow_node_id}")
 
     properties_from_old = old_real_node.marshal_dump
     properties_from_old[:shadow] = will_be_shadow
     set_node_properties(shadow_node_hash, properties_from_old)
-    @logger.info("node's properties is set to shadow node's")
+    @logger.debug("node's properties is set to shadow node's")
   end
 
   def rel_exists?(rel_in_source, node_hash, target_other_node_h, direction)
