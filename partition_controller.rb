@@ -61,11 +61,11 @@ module Tez
           target_partition_port = value
           if target_partition_port != source_partition_port
             #There should be a migration
-            source_partition = neo4j_instances[source_partition_port]
-            local_id = source_partition.get_indexed_node(gid)
-            to_be_migrated_node = Neography::Node.load(source_partition, local_id)
+            source_partition      = neo4j_instances[source_partition_port]
+            local_id              = source_partition.get_indexed_node(gid) #NEO4J
+            to_be_migrated_node   = Neography::Node.load(source_partition, local_id)
             migrated_node_shadows << to_be_migrated_node
-            target_partition = neo4j_instances[target_partition_port]
+            target_partition      = neo4j_instances[target_partition_port]
             @nc.migrate_node_to_partition(to_be_migrated_node, target_partition, @redis_connector)
           end
         }
