@@ -7,6 +7,9 @@ class Configuration
   GPART_GRF_PATH = Dir.home << "/hede.grf"
   GPART_RESULT_PATH  = Dir.home << "/result.map"
 
+  NODES_CSV = "/home/vol/Development/tez/batch-import/src/test/java/nodes.csv"
+  RELS_CSV = "/home/vol/Development/tez/batch-import/src/test/java/rels.csv"
+
   DOMAIN_MAP = {"6474" => "localhost",
                 "7474" => "localhost",
                 "8474" => "localhost"}
