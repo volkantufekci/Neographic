@@ -23,10 +23,13 @@ module RedisModul
       result
     end
 
-    def create_node(gid, field_value_a)
-      key = "node:" << gid.to_s
-      result = @redis.hmset(key, field_value_a)
-      #@log.debug("Redis create_node for key=#{key} with params=#{field_value_a}")
+    def create_node(gid_fieldvalue_h)
+      @redis.pipelined do
+        gid_fieldvalue_h.each { |k, v|
+          key = "node:" << k.to_s
+          @redis.hmset(key, v)
+        }
+      end
     end
 
     def create_relation(rel_id, field_value_a)
@@ -120,21 +123,25 @@ module RedisModul
     end
 
     def read_nodes_csv
-      i = -1
-      File.open(Configuration::NODES_CSV, 'r') do |input|
-        while (line = input.gets)
-          i += 1
-          next if i == 0
-
-          @log.info "#{i}. node created" if i%100000 == 0
-
-          tokens = line.chomp.split("\t")
-
-          gid = tokens[0]
-          field_value_a = %W[rels #{tokens[1]} property #{tokens[2]} counter #{tokens[3]}]
-          create_node(gid, field_value_a)
+      i = 0
+      gid_fieldvalue_h = {}
+      lines = IO.readlines(Configuration::NODES_CSV)
+      lines.delete_at(0) #first row is column headers
+      lines.each { |line|
+        i += 1
+        if i % 10000 == 0
+          create_node(gid_fieldvalue_h)
+          gid_fieldvalue_h.clear
         end
-      end
+
+        tokens = line.chomp.split("\t")
+
+        gid = tokens[0]
+        field_value_a = %W[rels #{tokens[1]} property #{tokens[2]} counter #{tokens[3]}]
+        gid_fieldvalue_h[gid] = field_value_a
+      }
+
+      create_node(gid_fieldvalue_h)
     end
 
     def read_rels_csv
@@ -171,10 +178,9 @@ module RedisModul
 
     def fill
       puts "Started at: #{Time.now}"
-      rc = RedisConnector.new
-      rc.remove_all
-      rc.read_nodes_csv
-      rc.read_rels_csv
+      remove_all
+      read_nodes_csv
+      #rc.read_rels_csv
       ##rc.fetch_relations
       puts "Finished at: #{Time.now}"
     end
