@@ -13,16 +13,6 @@ module RedisModul
       @log.level = Configuration::LOG_LEVEL
     end
 
-    def add_to_partition_list_for_node(gid, port)
-      create_partition_list_for_node(gid, port)
-    end
-
-    def create_partition_list_for_node(gid, port)
-      result = @redis.lpush gid, port
-      @log.debug("Redis add_to_partition_list_for_node(#{gid}, #{port}) returns: #{result}. VT")
-      result
-    end
-
     def create_node(gid_fieldvalue_h)
       @redis.pipelined do
         gid_fieldvalue_h.each { |k, v|
@@ -32,12 +22,15 @@ module RedisModul
       end
     end
 
-    def create_relation(rel_id, field_value_a)
-      #key = "rel:#{rel_id}"
-      key = "rel:" << rel_id.to_s
-      result = @redis.hmset(key, field_value_a)
-      #@log.debug("Redis create_relation for key=#{key} with params=#{field_value_a}")
-      #result
+    def create_relation(key_prefix, relid_fieldvalue_h)
+      raise "not suitable key_prefix=#{key_prefix} passed" unless %w[rel: out: in:].include? key_prefix
+
+      @redis.pipelined do
+        relid_fieldvalue_h.each do |id, field_value_h|
+          key = key_prefix + id.to_s
+          @redis.hmset(key, field_value_h)
+        end
+      end
     end
 
     def add_to_out_relations_of_node(gid, field_value_a)
@@ -62,34 +55,162 @@ module RedisModul
     def fetch_relations
       @log.info("#{self.class.to_s}##{__method__.to_s} started")
       node_nei_h = {}
-      max_relation_count = 999999
+      max_node_count = 999999
       lower_bound, upper_bound = 0, 9999
       interval = 10000
-      while lower_bound <= max_relation_count
+      while lower_bound <= max_node_count
         futures = {}
         @redis.pipelined do
           lower_bound.upto(upper_bound) do |i|
-            break if i > max_relation_count
+            break if i > max_node_count
             futures["out:#{i}"] = @redis.hvals("out:#{i}")
             futures["in:#{i}"]  = @redis.hvals("in:#{i}")
           end
         end
 
         lower_bound.upto(upper_bound) do |i|
-          break if i > max_relation_count
+          break if i > max_node_count
           node_nei_h[i] = (futures["out:#{i}"].value + futures["in:#{i}"].value).uniq
         end
 
         lower_bound += interval
         upper_bound += interval
       end
-      #0.upto(999999) do |i|
-      #  #duplicates are removed as there can be more than 1 rel to the same target node from the same source node
-      #  nei_a         = @redis.hgetall("out:#{i}").values.uniq | @redis.hgetall("in:#{i}").values.uniq
-      #  node_nei_h[i] = nei_a unless nei_a.empty?
-      #end
 
       node_nei_h
+    end
+
+    # @return [Hash<String, Array>] gid_props_h
+    # in the format of "gid=>[propert, value, property, value...]"
+    def fetch_node_properties(gids)
+      @log.info("#{self.class.to_s}##{__method__.to_s} started")
+      gid_props_h = {}
+      max_idx     = gids.length - 1
+      lower_bound, upper_bound, interval = 0, 9999, 10000
+
+      while lower_bound <= max_idx
+        futures = {}
+        @redis.pipelined do
+          lower_bound.upto(upper_bound) do |i|
+            break if i > max_idx
+            gid = gids[i]
+            futures[gid] = @redis.hgetall("node:#{gid}")
+          end
+        end
+
+        #fetch actual values from futures
+        lower_bound.upto(upper_bound) do |i|
+          break if i > max_idx
+          gid = gids[i]
+          gid_props_h[gid] = futures[gid].value
+        end
+
+        lower_bound += interval
+        upper_bound += interval
+      end
+
+      gid_props_h
+    end
+
+    def read_nodes_csv
+      i = 0
+      gid_fieldvalue_h = {}
+      lines = IO.readlines(Configuration::NODES_CSV)
+      lines.delete_at(0) #first row is column headers
+      lines.each { |line|
+        i += 1
+        if i % 10000 == 0
+          create_node(gid_fieldvalue_h)
+          gid_fieldvalue_h.clear
+        end
+
+        tokens = line.chomp.split("\t")
+
+        gid = tokens[0]
+        field_value_a = %W[rels #{tokens[1]} property #{tokens[2]} counter #{tokens[3]}]
+        gid_fieldvalue_h[gid] = field_value_a
+      }
+
+      create_node(gid_fieldvalue_h)
+    end
+
+    def read_rels_csv
+      @log.info("#{self.class.to_s}##{__method__.to_s} started")
+      lines = IO.readlines(Configuration::RELS_CSV)
+      lines.delete_at(0) #first row is column headers
+      process_lines_for_rels(lines)
+    end
+
+    def process_lines_for_rels(lines)
+      @log.info("#{self.class.to_s}##{__method__.to_s} started")
+      relid_fieldvalue_h, out_gid_fieldvalue_h, in_gid_fieldvalue_h = {}, {}, {}
+      i = 0
+      lines.each { |line|
+        i += 1
+        if i % 10000 == 0
+          @log.info "#{i}. relation created" if i % 1000000 == 0
+          create_relation("rel:", relid_fieldvalue_h)
+          relid_fieldvalue_h.clear
+
+          create_relation("out:", out_gid_fieldvalue_h)
+          out_gid_fieldvalue_h.clear
+
+          create_relation("in:", in_gid_fieldvalue_h)
+          in_gid_fieldvalue_h.clear
+        end
+
+        tokens        = line.chomp.split("\t")
+        start_gid     = tokens[0]
+        end_gid       = tokens[1]
+        counter       = tokens[4]
+        rel_id        = counter
+        field_value_a = %W[ende #{end_gid} type #{tokens[2]} property #{tokens[3]} counter #{counter}]
+
+        #create_relation(rel_id, field_value_a)
+        relid_fieldvalue_h[rel_id] = field_value_a
+
+        field_value_a = %W[#{rel_id} #{end_gid}]
+        #add_to_out_relations_of_node(start_gid, field_value_a)
+        if out_gid_fieldvalue_h[start_gid]
+          out_gid_fieldvalue_h[start_gid] += field_value_a
+        else
+          out_gid_fieldvalue_h[start_gid] = field_value_a
+        end
+
+
+        field_value_a = %W[#{rel_id} #{start_gid}]
+        #add_to_in_relations_of_node(end_gid, field_value_a)
+        if in_gid_fieldvalue_h[end_gid]
+          in_gid_fieldvalue_h[end_gid] += field_value_a
+        else
+          in_gid_fieldvalue_h[end_gid] = field_value_a
+        end
+
+      }
+
+      create_relation("rel:", relid_fieldvalue_h)   unless relid_fieldvalue_h.empty?
+      create_relation("out:", out_gid_fieldvalue_h) unless out_gid_fieldvalue_h.empty?
+      create_relation("in:", in_gid_fieldvalue_h)   unless in_gid_fieldvalue_h.empty?
+    end
+
+    def fill
+      puts "Started at: #{Time.now}"
+      remove_all
+      read_nodes_csv
+      read_rels_csv
+      ##rc.fetch_relations
+      puts "Finished at: #{Time.now}"
+    end
+
+    def reset_global_id
+      result = @redis.set :global_neo4j_id, "0"
+      @log.info("Redis reset global_neo4j_id. VT")
+      result
+    end
+
+    def remove_all
+      @redis.flushall
+      @log.info("Redis is reset with FLUSHALL. VT")
     end
 
     def bench(descr)
@@ -122,67 +243,26 @@ module RedisModul
       end
     end
 
-    def read_nodes_csv
-      i = 0
-      gid_fieldvalue_h = {}
-      lines = IO.readlines(Configuration::NODES_CSV)
-      lines.delete_at(0) #first row is column headers
-      lines.each { |line|
-        i += 1
-        if i % 10000 == 0
-          create_node(gid_fieldvalue_h)
-          gid_fieldvalue_h.clear
-        end
+  end
 
-        tokens = line.chomp.split("\t")
+  #rc=RedisConnector.new
+  #rc.bench("without pipelining") {
+  #  rc.without_pipelining
+  #}
+  #rc.bench("with pipelining") {
+  #  rc.with_pipelining
+  #}
 
-        gid = tokens[0]
-        field_value_a = %W[rels #{tokens[1]} property #{tokens[2]} counter #{tokens[3]}]
-        gid_fieldvalue_h[gid] = field_value_a
-      }
+  class RedisConnectorOld
 
-      create_node(gid_fieldvalue_h)
+    def add_to_partition_list_for_node(gid, port)
+      create_partition_list_for_node(gid, port)
     end
 
-    def read_rels_csv
-
-      lines = IO.readlines(Configuration::RELS_CSV)
-      lines.delete_at(0) #first row is column headers
-
-      process_lines_for_rels(lines)
-
-    end
-
-    def process_lines_for_rels(lines)
-      i = 0
-      lines.each { |line|
-        i += 1
-        @log.info "#{i}. relation created" if i%100000 == 0
-
-        tokens        = line.chomp.split("\t")
-        start_gid     = tokens[0]
-        end_gid       = tokens[1]
-        counter       = tokens[4]
-        field_value_a = %W[ende #{end_gid} type #{tokens[2]} property #{tokens[3]} counter #{counter}]
-
-        # burdaki i yerine redis'ten id ureten mekanizmaya gecilmeli
-        rel_id        = counter
-        create_relation(rel_id, field_value_a)
-        field_value_a = %W[#{rel_id} #{end_gid}]
-        add_to_out_relations_of_node(start_gid, field_value_a)
-
-        field_value_a = %W[#{rel_id} #{start_gid}]
-        add_to_in_relations_of_node(end_gid, field_value_a)
-      }
-    end
-
-    def fill
-      puts "Started at: #{Time.now}"
-      remove_all
-      read_nodes_csv
-      #rc.read_rels_csv
-      ##rc.fetch_relations
-      puts "Finished at: #{Time.now}"
+    def create_partition_list_for_node(gid, port)
+      result = @redis.lpush gid, port
+      @log.debug("Redis add_to_partition_list_for_node(#{gid}, #{port}) returns: #{result}. VT")
+      result
     end
 
     def update_partition_list_for_node(gid, new_partition_port)
@@ -213,27 +293,7 @@ module RedisModul
       @log.debug("Redis real_partition_of_node with gid:#{gid} is #{result.first}")
       result.first
     end
-
-    def reset_global_id
-      result = @redis.set :global_neo4j_id, "0"
-      @log.info("Redis reset global_neo4j_id. VT")
-      result
-    end
-
-    def remove_all
-      @redis.flushall
-      @log.info("Redis is reset with FLUSHALL. VT")
-    end
-
   end
-
-  #rc=RedisConnector.new
-  #rc.bench("without pipelining") {
-  #  rc.without_pipelining
-  #}
-  #rc.bench("with pipelining") {
-  #  rc.with_pipelining
-  #}
 end
 
 
