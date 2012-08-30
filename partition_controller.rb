@@ -16,10 +16,10 @@ module Tez
       attr_reader :neo1, :neo2, :neo4j_instances, :rel_controller
 
       def initialize(redis_dic={})
-        initialize_neo4j_instances(redis_dic)
+        #initialize_neo4j_instances(redis_dic)
         @redis_connector = RedisConnector.new(redis_dic)
-        @nc = NodeController.new
-        @rel_controller = RelationController.new
+        #@nc = NodeController.new
+        #@rel_controller = RelationController.new
         @log = Logger.new(STDOUT)
         @log.level = Configuration::LOG_LEVEL
       end
@@ -46,6 +46,67 @@ module Tez
                              :log_file => STDOUT,
                              :log_enabled => true,
                              :max_threads => 20}, redis_dic)
+      end
+
+      def generate_csvs(gid_partition_h, gid_nei_h)
+        @log.info("#{self.class.to_s}##{__method__.to_s} started")
+        shadow_partition_gids_h, partition_gids_h = {}, {}
+
+        gid_partition_h.each do |gid, partition|
+          if partition_gids_h[partition]
+            partition_gids_h[partition] << gid
+          else
+            partition_gids_h[partition] = [gid]
+          end
+
+          #node_neis.each shadow olanlari shadow_gid_partition_h'a ekle
+          relid_nei_h = gid_nei_h[gid]
+          relid_nei_h.each { |rel_id, nei| collect_shadows(nei, partition, gid_partition_h, shadow_partition_gids_h) }
+        end
+        @log.info("#{self.class.to_s}##{__method__.to_s} shadows and reals are separated into their partition hashes")
+
+        partition_gids_h.each { |partition, gids|
+          lines = build_node_csv_lines(gids)
+          self.write_to_file(partition, lines, "nodes.csv")
+        }
+      end
+
+      def collect_shadows(nei, partition, gid_partition_h, shadow_partition_gids_h)
+        if gid_partition_h[nei]
+          #nei de ayni part'ta, bir sey yapmaya gerek yok
+        else
+          if shadow_partition_gids_h[partition]
+            shadow_partition_gids_h[partition] << nei
+          else
+            shadow_partition_gids_h[partition] = [nei]
+          end
+        end
+      end
+
+      def build_node_csv_lines(gids)
+        @log.info("#{self.class.to_s}##{__method__.to_s} started")
+        lines = "Node\tRels\tProperty\tGid\n"
+        #fetch node properties
+        gid_props_h = @redis_connector.fetch_node_properties(gids)
+        gid_props_h.each { |gid, props|
+          line = "#{gid}"
+          props.values.each { |value| line << "\t#{value}" }
+          line << "\n"
+          lines << line
+        }
+        lines
+      end
+
+      def write_to_file(dir_name, to_the_file, file_name="nodes.csv")
+        @log.info("#{self.class.to_s}##{__method__.to_s} started")
+        csv_dir = Configuration::PARTITIONED_CSV_DIR
+        Dir.mkdir(csv_dir) unless Dir.exists?(csv_dir)
+        `rm -r #{csv_dir}/#{dir_name}` if Dir.exists?("#{csv_dir}/#{dir_name}")
+        Dir.mkdir("#{csv_dir}/#{dir_name}")
+        Dir.chdir("#{csv_dir}/#{dir_name}")
+        file = File.new file_name, "w"
+        file.write to_the_file
+        file.close
       end
 
       def migrate_via_gpart_mapping(gpart_mapping, before_mapping_hash)
@@ -102,7 +163,7 @@ module Tez
         @nc.del_shadow_without_relation(migrated_node_shadows)
       end
 
-
+      # @see #collect_node_nei_hashes
       def merge_node_neighbour_hashes
         # "Merging node=>[nei1, nei2, ...] hashes coming from partitions"
         @log.info("#{self.class.to_s}##{__method__.to_s} started")
@@ -114,6 +175,15 @@ module Tez
           }
         end
         final_hash
+      end
+
+      # before this method node_nei_hashes were collected from neo4j instances via merge_node_neighbour_hashes method
+      # but this method collects node_nei_hashes from redis in the format of "gid=>[nei1_gid, nei2_gid, ...] "
+      # @see #merge_node_neighbour_hashes
+      def collect_node_nei_hashes
+        @log.info("#{self.class.to_s}##{__method__.to_s} started")
+
+        node_nei_hash = @redis_connector.fetch_relations
       end
 
       #return hash whose keys are gids and values are real_partition_port of them
