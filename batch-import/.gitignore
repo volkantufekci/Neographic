@@ -1,0 +1,9 @@
+.project
+.shell_history
+.idea
+*.ipr
+*.iws
+*.iml
+target
+*.csv
+
