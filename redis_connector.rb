@@ -52,10 +52,10 @@ module RedisModul
 
     # Returns node_nei_hash in the format of "gid=>[nei1_gid, nei2_gid, ...]"
     # @see PartitionController#collect_node_nei_hashes
-    def fetch_relations
+    def fetch_relations(max_node_count = 999999)
       @log.info("#{self.class.to_s}##{__method__.to_s} started")
-      node_nei_h = {}
-      max_node_count = 999999
+      gid_relidnei_h = {}
+
       lower_bound, upper_bound = 0, 9999
       interval = 10000
       while lower_bound <= max_node_count
@@ -63,28 +63,30 @@ module RedisModul
         @redis.pipelined do
           lower_bound.upto(upper_bound) do |i|
             break if i > max_node_count
-            futures["out:#{i}"] = @redis.hvals("out:#{i}")
-            futures["in:#{i}"]  = @redis.hvals("in:#{i}")
+            futures["out:#{i}"] = @redis.hgetall("out:#{i}")
+            futures["in:#{i}"]  = @redis.hgetall("in:#{i}")
           end
         end
 
         lower_bound.upto(upper_bound) do |i|
           break if i > max_node_count
-          node_nei_h[i] = (futures["out:#{i}"].value + futures["in:#{i}"].value).uniq
+          gid_relidnei_h[i] = futures["out:#{i}"].value.merge(futures["in:#{i}"].value)
         end
 
         lower_bound += interval
         upper_bound += interval
       end
 
-      node_nei_h
+      gid_relidnei_h
     end
 
     # @return [Hash<String, Array>] gid_props_h
     # in the format of "gid=>[propert, value, property, value...]"
-    def fetch_node_properties(gids)
+    def fetch_values_for(key_prefix, gids)
       @log.info("#{self.class.to_s}##{__method__.to_s} started")
-      gid_props_h = {}
+
+      raise "not suitable key_prefix=#{key_prefix} passed" unless [:node, :rel, :out, :in].include? key_prefix
+      gid_values_h = {}
       max_idx     = gids.length - 1
       lower_bound, upper_bound, interval = 0, 9999, 10000
 
@@ -94,7 +96,7 @@ module RedisModul
           lower_bound.upto(upper_bound) do |i|
             break if i > max_idx
             gid = gids[i]
-            futures[gid] = @redis.hgetall("node:#{gid}")
+            futures[gid] = @redis.hgetall("#{key_prefix}:#{gid}")
           end
         end
 
@@ -102,14 +104,14 @@ module RedisModul
         lower_bound.upto(upper_bound) do |i|
           break if i > max_idx
           gid = gids[i]
-          gid_props_h[gid] = futures[gid].value
+          gid_values_h[gid] = futures[gid].value
         end
 
         lower_bound += interval
         upper_bound += interval
       end
 
-      gid_props_h
+      gid_values_h
     end
 
     def read_nodes_csv
@@ -164,7 +166,7 @@ module RedisModul
         end_gid       = tokens[1]
         counter       = tokens[4]
         rel_id        = counter
-        field_value_a = %W[ende #{end_gid} type #{tokens[2]} property #{tokens[3]} counter #{counter}]
+        field_value_a = %W[Start #{start_gid} Ende #{end_gid} Type #{tokens[2]} Property #{tokens[3]} Counter:int #{counter}]
 
         #create_relation(rel_id, field_value_a)
         relid_fieldvalue_h[rel_id] = field_value_a
