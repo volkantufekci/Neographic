@@ -16,6 +16,8 @@ module Tez
       attr_reader :neo1, :neo2, :neo4j_instances, :rel_controller
 
       def initialize(redis_dic={})
+        @gid_neoid_h = {}
+
         #initialize_neo4j_instances(redis_dic)
         @redis_connector = RedisConnector.new(redis_dic)
         #@nc = NodeController.new
@@ -48,8 +50,8 @@ module Tez
                              :max_threads => 20}, redis_dic)
       end
 
-      def generate_csvs(gid_partition_h, gid_nei_h)
-        @log.info("#{self.class.to_s}##{__method__.to_s} started")
+      def generate_csvs(gid_partition_h, gid_relidnei_h)
+        @log.info("#{__method__.to_s} started[#{self.class.to_s}]")
         shadow_partition_gids_h, partition_gids_h = {}, {}
 
         gid_partition_h.each do |gid, partition|
@@ -60,19 +62,33 @@ module Tez
           end
 
           #node_neis.each shadow olanlari shadow_gid_partition_h'a ekle
-          relid_nei_h = gid_nei_h[gid]
-          relid_nei_h.each { |rel_id, nei| collect_shadows(nei, partition, gid_partition_h, shadow_partition_gids_h) }
+          relid_nei_h = gid_relidnei_h[gid]
+          relid_nei_h.values.each { |nei| collect_shadows(nei, partition, gid_partition_h, shadow_partition_gids_h) }
         end
+
+        gid_relidnei_h.clear
+        gid_partition_h.clear
         @log.info("#{self.class.to_s}##{__method__.to_s} shadows and reals are separated into their partition hashes")
 
         partition_gids_h.each { |partition, gids|
-          lines = build_node_csv_lines(gids)
+          lines = "Node\tRels\tProperty\tGid\tShadow:boolean\n"
+          lines = lines << build_node_csv_lines(gids, false)
+
+          shadow_gids = shadow_partition_gids_h[partition].uniq
+          lines << build_node_csv_lines(gids.length, shadow_gids, true)
           self.write_to_file(partition, lines, "nodes.csv")
+
+          lines    = "Start\tEnde\tType\tProperty\tCounter:long\n"
+          all_gids = gids + shadow_gids
+          lines << build_rels_csv_lines(all_gids)
+          self.write_to_file(partition, lines, "rels.csv")
         }
+
       end
 
       def collect_shadows(nei, partition, gid_partition_h, shadow_partition_gids_h)
-        if gid_partition_h[nei]
+        nei = nei.to_i
+        if gid_partition_h[nei] == partition
           #nei de ayni part'ta, bir sey yapmaya gerek yok
         else
           if shadow_partition_gids_h[partition]
@@ -83,26 +99,65 @@ module Tez
         end
       end
 
-      def build_node_csv_lines(gids)
-        @log.info("#{self.class.to_s}##{__method__.to_s} started")
-        lines = "Node\tRels\tProperty\tGid\n"
+      def build_node_csv_lines(neo_id = 0, gids, are_shadows)
+        @log.info("#{__method__.to_s} started[#{self.class.to_s}]")
+
+        lines = ""
         #fetch node properties
-        gid_props_h = @redis_connector.fetch_node_properties(gids)
+        gid_props_h = @redis_connector.fetch_values_for(:node, gids)
         gid_props_h.each { |gid, props|
-          line = "#{gid}"
+          line = "#{neo_id}"
           props.values.each { |value| line << "\t#{value}" }
-          line << "\n"
+          line << "\t#{are_shadows}\n"
           lines << line
+          @gid_neoid_h[gid] = neo_id
+          neo_id += 1
+        }
+        lines
+      end
+
+      def build_rels_csv_lines(all_gids)
+        @log.info("#{__method__.to_s} started[#{self.class.to_s}]")
+
+        gid_relidgid_h  = @redis_connector.fetch_values_for(:out, all_gids)
+        relid_gid_h_a   = gid_relidgid_h.values
+        rel_ids         = []
+        relid_gid_h_a.each { |relid_gid_h| rel_ids << relid_gid_h.keys }
+        rel_ids.flatten!
+
+        lines = ""
+        #fetch rel properties
+        rel_props_h = @redis_connector.fetch_values_for(:rel, rel_ids)
+        rel_props_h.values.each { |props|
+          ende = @gid_neoid_h[props["Ende"].to_i] # If gid is a shadow its rel may not be in this partition
+          if ende
+            line = ""
+            props.each do |property, value|
+              case property
+                when "Start"
+                  line << "#{@gid_neoid_h[value.to_i]}"
+                when "Ende"
+                  line << "\t#{ende}"
+                else
+                  line << "\t#{value}"
+              end
+            end
+            line << "\n"
+            lines << line
+          end
         }
         lines
       end
 
       def write_to_file(dir_name, to_the_file, file_name="nodes.csv")
-        @log.info("#{self.class.to_s}##{__method__.to_s} started")
+        @log.info("#{__method__.to_s} started[#{self.class.to_s}]")
         csv_dir = Configuration::PARTITIONED_CSV_DIR
         Dir.mkdir(csv_dir) unless Dir.exists?(csv_dir)
-        `rm -r #{csv_dir}/#{dir_name}` if Dir.exists?("#{csv_dir}/#{dir_name}")
-        Dir.mkdir("#{csv_dir}/#{dir_name}")
+        if Dir.exists?("#{csv_dir}/#{dir_name}")
+          `rm #{csv_dir}/#{dir_name}/#{file_name}`
+        else
+          Dir.mkdir("#{csv_dir}/#{dir_name}")
+        end
         Dir.chdir("#{csv_dir}/#{dir_name}")
         file = File.new file_name, "w"
         file.write to_the_file
@@ -166,7 +221,7 @@ module Tez
       # @see #collect_node_nei_hashes
       def merge_node_neighbour_hashes
         # "Merging node=>[nei1, nei2, ...] hashes coming from partitions"
-        @log.info("#{self.class.to_s}##{__method__.to_s} started")
+        @log.info("#{__method__.to_s} started[#{self.class.to_s}]")
 
         final_hash = {}
         @neo4j_instances.values.each do |neo_instance|
@@ -181,7 +236,7 @@ module Tez
       # but this method collects node_nei_hashes from redis in the format of "gid=>[nei1_gid, nei2_gid, ...] "
       # @see #merge_node_neighbour_hashes
       def collect_node_nei_hashes
-        @log.info("#{self.class.to_s}##{__method__.to_s} started")
+        @log.info("#{__method__.to_s} started[#{self.class.to_s}]")
 
         node_nei_hash = @redis_connector.fetch_relations
       end
