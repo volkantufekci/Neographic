@@ -4,11 +4,14 @@ class Configuration
 
   LOG_LEVEL = Logger::INFO
 
-  GPART_GRF_PATH = Dir.home << "/hede.grf"
-  GPART_RESULT_PATH  = Dir.home << "/result.map"
+  GPART_GRF_PATH      = Dir.home << "/hede.grf"
+  GPART_RESULT_PATH   = Dir.home << "/result.map"
 
-  NODES_CSV = "/home/vol/Development/tez/batch-import/src/test/java/nodes.csv"
-  RELS_CSV = "/home/vol/Development/tez/batch-import/src/test/java/rels.csv"
+  #Unpartitioned, original one created at first via batch-importer
+  NODES_CSV           = Dir.home << "/nodes.csv"
+  RELS_CSV            = Dir.home << "/rels.csv"
+
+  PARTITIONED_CSV_DIR = Dir.home << "/partitioned_csv_dir"
 
   DOMAIN_MAP = {"6474" => "localhost",
                 "7474" => "localhost",
