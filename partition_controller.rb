@@ -72,7 +72,7 @@ module Tez
 
         partition_gids_h.each { |partition, gids|
           @log.info("Building node lines for #{partition} started")
-          lines = "Node\tRels\tProperty\tGid\tShadow:boolean\n"
+          lines = "Node\tGid\tShadow:boolean\n"
           self.write_to_file(partition, lines, "nodes.csv")
           build_node_csv_lines(gids, partition, false)
 
@@ -81,7 +81,7 @@ module Tez
           build_node_csv_lines(gids.length, shadow_gids, partition, true)
 
           @log.info("Building rel lines for #{partition} started")
-          lines    = "Start\tEnde\tType\tProperty\tCounter:long\n"
+          lines    = "Start\tEnde\tCounter:long\n"
           self.write_to_file(partition, lines, "rels.csv")
           all_gids = gids + shadow_gids
           build_rels_csv_lines(all_gids, partition)
