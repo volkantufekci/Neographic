@@ -66,22 +66,26 @@ module Tez
           relid_nei_h.values.each { |nei| collect_shadows(nei, partition, gid_partition_h, shadow_partition_gids_h) }
         end
 
-        gid_relidnei_h.clear
-        gid_partition_h.clear
+        gid_relidnei_h  = nil
+        gid_partition_h = nil
         @log.info("#{self.class.to_s}##{__method__.to_s} shadows and reals are separated into their partition hashes")
 
         partition_gids_h.each { |partition, gids|
+          @log.info("Building node lines for #{partition} started")
           lines = "Node\tRels\tProperty\tGid\tShadow:boolean\n"
-          lines = lines << build_node_csv_lines(gids, false)
-
-          shadow_gids = shadow_partition_gids_h[partition].uniq
-          lines << build_node_csv_lines(gids.length, shadow_gids, true)
           self.write_to_file(partition, lines, "nodes.csv")
+          build_node_csv_lines(gids, partition, false)
 
+          @log.info("Building shadow node lines for #{partition} started")
+          shadow_gids = shadow_partition_gids_h[partition].uniq
+          build_node_csv_lines(gids.length, shadow_gids, partition, true)
+
+          @log.info("Building rel lines for #{partition} started")
           lines    = "Start\tEnde\tType\tProperty\tCounter:long\n"
-          all_gids = gids + shadow_gids
-          lines << build_rels_csv_lines(all_gids)
           self.write_to_file(partition, lines, "rels.csv")
+          all_gids = gids + shadow_gids
+          build_rels_csv_lines(all_gids, partition)
+
         }
 
       end
@@ -99,54 +103,80 @@ module Tez
         end
       end
 
-      def build_node_csv_lines(neo_id = 0, gids, are_shadows)
+      def build_node_csv_lines(neo_id = 0, gids, partition, are_shadows)
         @log.info("#{__method__.to_s} started[#{self.class.to_s}]")
 
-        lines = ""
-        #fetch node properties
-        gid_props_h = @redis_connector.fetch_values_for(:node, gids)
-        gid_props_h.each { |gid, props|
-          line = "#{neo_id}"
-          props.values.each { |value| line << "\t#{value}" }
-          line << "\t#{are_shadows}\n"
-          lines << line
-          @gid_neoid_h[gid] = neo_id
-          neo_id += 1
-        }
-        lines
+        max_idx = gids.length - 1
+        lower, upper, interval = 0, 9999, 10000
+        while lower <= max_idx
+          temp_gids = gids[lower..upper]
+
+          lines = ""
+          #fetch node properties
+          gid_props_h = @redis_connector.fetch_values_for(:node, temp_gids)
+          gid_props_h.each { |gid, props|
+            line = "#{neo_id}"
+            props.values.each { |value| line << "\t#{value}" }
+            line << "\t#{are_shadows}\n"
+            lines << line
+            @gid_neoid_h[gid] = neo_id
+            neo_id += 1
+          }
+          self.append_to_file(partition, lines, "nodes.csv")
+
+          lower += interval
+          upper += interval
+        end
+
       end
 
-      def build_rels_csv_lines(all_gids)
+      def build_rels_csv_lines(all_gids, partition)
         @log.info("#{__method__.to_s} started[#{self.class.to_s}]")
 
-        gid_relidgid_h  = @redis_connector.fetch_values_for(:out, all_gids)
-        relid_gid_h_a   = gid_relidgid_h.values
-        rel_ids         = []
+        rel_ids = self.collect_relids(all_gids)
+        max_idx = rel_ids.length - 1
+        lower, upper, interval = 0, 9999, 10000
+
+        while lower <= max_idx
+          temp_relids = rel_ids[lower..upper]
+
+          lines = ""
+          #fetch rel properties
+          rel_props_h = @redis_connector.fetch_values_for(:rel, temp_relids)
+          rel_props_h.values.each { |props|
+            ende = @gid_neoid_h[props["Ende"].to_i] # If gid is a shadow its rel may not be in this partition
+            if ende
+              line = ""
+              props.each do |property, value|
+                case property
+                  when "Start"
+                    line << "#{@gid_neoid_h[value.to_i]}"
+                  when "Ende"
+                    line << "\t#{ende}"
+                  else
+                    line << "\t#{value}"
+                end
+              end
+              line << "\n"
+              lines << line
+            end
+          }
+          self.append_to_file(partition, lines, "rels.csv")
+
+          lower += interval
+          upper += interval
+        end
+
+      end
+
+      def collect_relids(all_gids)
+        gid_relidgid_h = @redis_connector.fetch_values_for(:out, all_gids)
+        relid_gid_h_a = gid_relidgid_h.values
+        gid_relidgid_h = nil
+        rel_ids = []
         relid_gid_h_a.each { |relid_gid_h| rel_ids << relid_gid_h.keys }
         rel_ids.flatten!
-
-        lines = ""
-        #fetch rel properties
-        rel_props_h = @redis_connector.fetch_values_for(:rel, rel_ids)
-        rel_props_h.values.each { |props|
-          ende = @gid_neoid_h[props["Ende"].to_i] # If gid is a shadow its rel may not be in this partition
-          if ende
-            line = ""
-            props.each do |property, value|
-              case property
-                when "Start"
-                  line << "#{@gid_neoid_h[value.to_i]}"
-                when "Ende"
-                  line << "\t#{ende}"
-                else
-                  line << "\t#{value}"
-              end
-            end
-            line << "\n"
-            lines << line
-          end
-        }
-        lines
+        rel_ids
       end
 
       def write_to_file(dir_name, to_the_file, file_name="nodes.csv")
@@ -160,6 +190,15 @@ module Tez
         end
         Dir.chdir("#{csv_dir}/#{dir_name}")
         file = File.new file_name, "w"
+        file.write to_the_file
+        file.close
+      end
+
+      def append_to_file(dir_name, to_the_file, file_name="nodes.csv")
+        csv_dir = Configuration::PARTITIONED_CSV_DIR
+        Dir.mkdir(csv_dir) unless Dir.exists?(csv_dir)
+        Dir.chdir("#{csv_dir}/#{dir_name}")
+        file = File.new file_name, "a"
         file.write to_the_file
         file.close
       end
