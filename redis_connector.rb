@@ -83,8 +83,6 @@ module RedisModul
     # @return [Hash<String, Array>] gid_props_h
     # in the format of "gid=>[propert, value, property, value...]"
     def fetch_values_for(key_prefix, gids)
-      @log.info("#{self.class.to_s}##{__method__.to_s} started")
-
       raise "not suitable key_prefix=#{key_prefix} passed" unless [:node, :rel, :out, :in].include? key_prefix
       gid_values_h = {}
       max_idx     = gids.length - 1
@@ -115,6 +113,7 @@ module RedisModul
     end
 
     def read_nodes_csv
+      @log.info("#{self.class.to_s}##{__method__.to_s} started")
       i = 0
       gid_fieldvalue_h = {}
       lines = IO.readlines(Configuration::NODES_CSV)
@@ -129,7 +128,7 @@ module RedisModul
         tokens = line.chomp.split("\t")
 
         gid = tokens[0]
-        field_value_a = %W[rels #{tokens[1]} property #{tokens[2]} counter #{tokens[3]}]
+        field_value_a = %W[counter #{tokens[1]}]
         gid_fieldvalue_h[gid] = field_value_a
       }
 
@@ -164,9 +163,9 @@ module RedisModul
         tokens        = line.chomp.split("\t")
         start_gid     = tokens[0]
         end_gid       = tokens[1]
-        counter       = tokens[4]
+        counter       = tokens[2]
         rel_id        = counter
-        field_value_a = %W[Start #{start_gid} Ende #{end_gid} Type #{tokens[2]} Property #{tokens[3]} Counter:int #{counter}]
+        field_value_a = %W[Start #{start_gid} Ende #{end_gid} Counter:int #{counter}]
 
         #create_relation(rel_id, field_value_a)
         relid_fieldvalue_h[rel_id] = field_value_a
