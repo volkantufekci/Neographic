@@ -39,37 +39,38 @@ class PartitionControllerTest < Test::Unit::TestCase
   #end
 
 
-  def test_random_graph_generation
-    #reset_neo(0)
-    #reset_neo(1)
-    #reset_neo2(2)
-
-    rgg = RandomGraphGenerator.new
-    random_node_count = 10
-    neo4j_instance_no = 2
-    redis_dic = {:host => 'localhost', :port => 6379}
-    rgg.fill_graph_randomly(neo4j_instance_no, random_node_count, redis_dic)
-
-    instance_mapping = {0=>6474, 1=>7474, 2=>8474}
-    port = instance_mapping[neo4j_instance_no]
-    domain_map = Configuration::DOMAIN_MAP
-    neo4j_instance = Tez::PartitionController.connect_to_neo4j_instance(
-        domain_map[port.to_s], port, redis_dic)
-
-    generated_node_count = neo4j_instance.execute_script("g.V.count()")
-
-    assert(random_node_count + 1 == generated_node_count,
-           "Expected node count(#{random_node_count+1}) is not equal to actual node count(#{generated_node_count})")
-
-    #`~/Development/tez/Neo4jSurumleri/neo4j-community-1.7_2/bin/neo4j stop`
-    #`cp -r ~/Development/tez/Neo4jSurumleri/neo4j-community-1.7_2/data/graph.db ~/graphdb10k`
-    #`~/Development/tez/Neo4jSurumleri/neo4j-community-1.7_2/bin/neo4j start`
-
-    #### Aslinda burasi test_partitioning_from_8474_to_6474_and_7474 metodunda
-      @pc = Tez::PartitionController.new(redis_dic)
-      total_neo4j_count = 2
-      migrate_via_gpart(total_neo4j_count)
-  end
+  # Redis oncesi son calisan test
+  #def test_random_graph_generation
+  #  #reset_neo(0)
+  #  #reset_neo(1)
+  #  #reset_neo2(2)
+  #
+  #  rgg = RandomGraphGenerator.new
+  #  random_node_count = 10
+  #  neo4j_instance_no = 2
+  #  redis_dic = {:host => 'localhost', :port => 6379}
+  #  rgg.fill_graph_randomly(neo4j_instance_no, random_node_count, redis_dic)
+  #
+  #  instance_mapping = {0=>6474, 1=>7474, 2=>8474}
+  #  port = instance_mapping[neo4j_instance_no]
+  #  domain_map = Configuration::DOMAIN_MAP
+  #  neo4j_instance = Tez::PartitionController.connect_to_neo4j_instance(
+  #      domain_map[port.to_s], port, redis_dic)
+  #
+  #  generated_node_count = neo4j_instance.execute_script("g.V.count()")
+  #
+  #  assert(random_node_count + 1 == generated_node_count,
+  #         "Expected node count(#{random_node_count+1}) is not equal to actual node count(#{generated_node_count})")
+  #
+  #  #`~/Development/tez/Neo4jSurumleri/neo4j-community-1.7_2/bin/neo4j stop`
+  #  #`cp -r ~/Development/tez/Neo4jSurumleri/neo4j-community-1.7_2/data/graph.db ~/graphdb10k`
+  #  #`~/Development/tez/Neo4jSurumleri/neo4j-community-1.7_2/bin/neo4j start`
+  #
+  #  #### Aslinda burasi test_partitioning_from_8474_to_6474_and_7474 metodunda
+  #    @pc = Tez::PartitionController.new(redis_dic)
+  #    total_neo4j_count = 2
+  #    migrate_via_gpart(total_neo4j_count)
+  #end
 
 =begin
   def test_partitioning_random_generated_graph
@@ -155,6 +156,24 @@ class PartitionControllerTest < Test::Unit::TestCase
     gpart_mapping_hash  = @gpc.partition_and_return_mapping
 
     migrated_nodes      = @pc.migrate_via_gpart_mapping gpart_mapping_hash, before_mapping_hash
+  end
+
+  def migrate_via_gpart_redis(total_neo4j_count)
+    logger.info("#{self.class.to_s}##{__method__.to_s} FOR Neo4j Count: #{total_neo4j_count} STARTED")
+
+    gid_nei_h           = @pc.collect_node_nei_hashes
+    @gpc                = GpartController.new(gid_nei_h, total_neo4j_count)
+    gpart_mapping_hash  = @gpc.partition_and_return_mapping
+
+    #migrated_nodes      = @pc.migrate_via_gpart_mapping gpart_mapping_hash, before_mapping_hash
+
+    #herbir partition icin
+      #nodes.csv + rels.csv olustur
+      #batch_importer calistir
+      #db dizinlerini tas
+      #neo instance'ini calistir
+
+    h = []
   end
 
   def preload_neo4j (neo4j)

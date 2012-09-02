@@ -81,7 +81,7 @@ module Tez
           build_node_csv_lines(gids.length, shadow_gids, partition, true)
 
           @log.info("Building rel lines for #{partition} started")
-          lines    = "Start\tEnde\tCounter:long\n"
+          lines    = "Start\tEnde\tType\tVisited:int\tCounter:long\n"
           self.write_to_file(partition, lines, "rels.csv")
           all_gids = gids + shadow_gids
           build_rels_csv_lines(all_gids, partition)
