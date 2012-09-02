@@ -6,9 +6,11 @@ module RedisModul
 
   class RedisConnector
 
-    def initialize(dic={:host => 'localhost', :port => 6379})
-      #@redis = Redis.new(dic)
-      @redis = Redis.new(:path => "/tmp/redis.sock")
+    def initialize(redis_id="_0")
+      #@redis = Redis.new(dic) #dic={:host => 'localhost', :port => 6379},
+      path = "/tmp/redis.sock" << redis_id
+      p path
+      @redis = Redis.new(:path => path)
       @log = Logger.new(STDOUT)
       @log.level = Configuration::LOG_LEVEL
     end
@@ -128,7 +130,7 @@ module RedisModul
         tokens = line.chomp.split("\t")
 
         gid = tokens[0]
-        field_value_a = %W[counter #{tokens[1]}]
+        field_value_a = %W[Counter:int #{tokens[1]}]
         gid_fieldvalue_h[gid] = field_value_a
       }
 
@@ -163,9 +165,11 @@ module RedisModul
         tokens        = line.chomp.split("\t")
         start_gid     = tokens[0]
         end_gid       = tokens[1]
-        counter       = tokens[2]
+        type          = tokens[2]
+        visited       = tokens[3]
+        counter       = tokens[4]
         rel_id        = counter
-        field_value_a = %W[Start #{start_gid} Ende #{end_gid} Counter:int #{counter}]
+        field_value_a = %W[Start #{start_gid} Ende #{end_gid} Type #{type} Visited:int #{visited} Counter:long #{counter}]
 
         #create_relation(rel_id, field_value_a)
         relid_fieldvalue_h[rel_id] = field_value_a

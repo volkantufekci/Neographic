@@ -15,11 +15,11 @@ module Tez
 
       attr_reader :neo1, :neo2, :neo4j_instances, :rel_controller
 
-      def initialize(redis_dic={})
+      def initialize()
         @gid_neoid_h = {}
 
         #initialize_neo4j_instances(redis_dic)
-        @redis_connector = RedisConnector.new(redis_dic)
+        @redis_connector = RedisConnector.new
         #@nc = NodeController.new
         #@rel_controller = RelationController.new
         @log = Logger.new(STDOUT)
