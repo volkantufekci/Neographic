@@ -68,7 +68,7 @@ module Tez
 
         gid_relidnei_h  = nil
         gid_partition_h = nil
-        @log.info("#{self.class.to_s}##{__method__.to_s} shadows and reals are separated into their partition hashes")
+        @log.info("shadows and reals are separated into their partition hashes[#{__method__.to_s} ]")
 
         partition_gids_h.each { |partition, gids|
           @log.info("Building node lines for #{partition} started")
