@@ -5,7 +5,10 @@ DataMapper.finalize
 DataMapper.auto_migrate!
 
 class RDBController
-  puts "baslangic: #{Time.now}"
+
+  logger ||= Logger.new(STDOUT)
+  logger.level=Logger::DEBUG
+  logger.info "baslangic: #{Time.now}"
 
   i = -1
   File.open(Configuration::NODES_CSV, 'r') do |input|
@@ -13,6 +16,9 @@ class RDBController
       #break if i < 0
       i += 1
       next if i == 0
+
+      logger.debug "#{i}. node created" if i%100000 == 0
+
       splitted_token = line.chomp.split("\t")
       tokens = []
       splitted_token.each { |token|
@@ -31,6 +37,9 @@ class RDBController
     while (line = input.gets)
       i += 1
       next if i == 0
+
+      logger.debug "#{i}. relation created" if i%100000 == 0
+
       splitted_token = line.chomp.split("\t")
       tokens = []
       splitted_token.each { |token|
@@ -44,5 +53,7 @@ class RDBController
     end
   end
 
-  puts "bitis: #{Time.now}"
+  logger.info "bitis: #{Time.now}"
+
+
 end
