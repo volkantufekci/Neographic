@@ -12,7 +12,7 @@ import java.util.Random;
 //@Ignore
 public class TestDataGenerator {
 
-    private static int NODES = 1000000;
+    private static int NODES = 100000;
     private static final int RELS_PER_NODE = 5;
     private static final String[] TYPES = {"ONE","TWO","THREE","FOUR","FIVE","SIX","SEVEN","EIGHT","NINE","TEN"};
     public static final int NUM_TYPES = 10;
@@ -23,7 +23,7 @@ public class TestDataGenerator {
         BufferedWriter nodeFile = new BufferedWriter(new FileWriter("nodes.csv"));
         nodeFile.write("Node\tCounter:int\n");
         BufferedWriter relFile = new BufferedWriter(new FileWriter("rels.csv"));
-        relFile.write("Start\tEnde\tCounter:long\n");
+        relFile.write("Start\tEnde\tType\tVisited:int\tCounter:long\n");
         for (int node = 0; node < NODES; node++) {
             final int rels = rnd.nextInt(RELS_PER_NODE) + 1;
             nodeFile.write(node+"\t"+node+"\n");
@@ -32,7 +32,7 @@ public class TestDataGenerator {
                 final int node1 = node;
                 //final int node1 = rnd.nextInt(NODES);
                 final int node2 = rnd.nextInt(NODES);
-                relFile.write(node1 + "\t" + node2 + "\t" + relCount+ "\n");
+                relFile.write(node1 + "\t" + node2 + "\t" + TYPES[rel % NUM_TYPES] + "\t" + 0 +"\t" + relCount+ "\n");
             }
         }
         nodeFile.close();
