@@ -47,7 +47,7 @@ class GpartController
 
     relid_nei_h_array.each do |relid_nei_h|
       #unless neighbours.nil? || neighbours.empty?
-        neighbours = relid_nei_h.values
+        neighbours = relid_nei_h.values.uniq
         not_empty_node_count += 1
         relation_count += neighbours.length
         line = "\n#{neighbours.length}"
