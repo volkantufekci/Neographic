@@ -13,6 +13,10 @@ class Configuration
 
   PARTITIONED_CSV_DIR = Dir.home << "/partitioned_csv_dir"
 
+  #Hubway
+  HUBWAY_STATIONS_CSV = Dir.home << "/hubway_original_csv_dir/stations.csv"
+  HUBWAY_TRIPS_CSV    = Dir.home << "/hubway_original_csv_dir/trips.csv"
+
   DOMAIN_MAP = {"6474" => "localhost",
                 "7474" => "localhost",
                 "8474" => "localhost"}
