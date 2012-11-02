@@ -63,7 +63,7 @@ module Tez
 
           #node_neis.each shadow olanlari shadow_gid_partition_h'a ekle
           relid_nei_h = gid_relidnei_h[gid]
-          relid_nei_h.values.each { |nei| collect_shadows(nei, partition, gid_partition_h, shadow_partition_gids_h) }
+          relid_nei_h.values.each { |nei_visited| collect_shadows(nei_visited, partition, gid_partition_h, shadow_partition_gids_h) }
         end
 
         gid_relidnei_h  = nil
@@ -90,7 +90,8 @@ module Tez
 
       end
 
-      def collect_shadows(nei, partition, gid_partition_h, shadow_partition_gids_h)
+      def collect_shadows(nei_visited, partition, gid_partition_h, shadow_partition_gids_h)
+        nei = nei_visited.split(":").first
         nei = nei.to_i
         if gid_partition_h[nei] == partition
           #nei de ayni part'ta, bir sey yapmaya gerek yok
