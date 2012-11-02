@@ -12,8 +12,8 @@ import java.util.Random;
 //@Ignore
 public class TestDataGenerator {
 
-    private static int NODES = 100000;
-    private static final int RELS_PER_NODE = 5;
+    private static int NODES = 10;
+    private static final int RELS_PER_NODE = 1;
     private static final String[] TYPES = {"ONE","TWO","THREE","FOUR","FIVE","SIX","SEVEN","EIGHT","NINE","TEN"};
     public static final int NUM_TYPES = 10;
 
@@ -31,8 +31,15 @@ public class TestDataGenerator {
                 relCount++;
                 final int node1 = node;
                 //final int node1 = rnd.nextInt(NODES);
-                final int node2 = rnd.nextInt(NODES);
-                relFile.write(node1 + "\t" + node2 + "\t" + TYPES[rel % NUM_TYPES] + "\t" + 0 +"\t" + relCount+ "\n");
+		int trialLimit = 5;
+                final int node2 = node < trialLimit ? rnd.nextInt(trialLimit) : rnd.nextInt(NODES);
+
+		int visited = 1;
+		if(node < trialLimit){
+			visited = 5;
+		}
+
+                relFile.write(node1 + "\t" + node2 + "\t" + TYPES[rel % NUM_TYPES] + "\t" + visited +"\t" + relCount+ "\n");
             }
         }
         nodeFile.close();
