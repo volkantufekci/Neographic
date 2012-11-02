@@ -18,7 +18,7 @@ class GpartController
   def perform_gparting
     @log.info("#{self.class.to_s}##{__method__.to_s} started")
     neo4j_count = @total_neo4j_count
-    `gpart #{neo4j_count} #{Configuration::GPART_GRF_PATH} #{Configuration::GPART_RESULT_PATH}`
+    `gpart #{neo4j_count} #{Configuration::GPART_GRF_PATH} #{Configuration::GPART_RESULT_PATH} -b0.9`
     gpart_mapping = read_gpart_result
     gpart_mapping = inject_partition_ports(gpart_mapping)
     #should return sth like {1=>7474, 2=>6474, 3=>7474, ...}
@@ -47,19 +47,30 @@ class GpartController
 
     relid_nei_h_array.each do |relid_nei_h|
       #unless neighbours.nil? || neighbours.empty?
-        neighbours = relid_nei_h.values.uniq
+      #  neighbours = relid_nei_h.values.uniq
+        neighbours = Hash.new
+        relid_nei_h.values.each do |neiid_visited|
+          splitted  = neiid_visited.split(":")
+          neiid     = splitted.first
+          visited   = splitted.last
+          if neighbours[neiid]
+            neighbours[neiid] += visited.to_i
+          else
+            neighbours[neiid] = visited.to_i
+          end
+        end
         not_empty_node_count += 1
-        relation_count += neighbours.length
-        line = "\n#{neighbours.length}"
-        neighbours.each { |node_id|
-          line << "\t#{node_id}"
+        relation_count += neighbours.size
+        line = "\n#{neighbours.size}"
+        neighbours.each { |nei_id, visited|
+          line << "\t#{visited}\t#{nei_id}"
         }
         #neighbours.each { |node_id| line << "\t#{@gpart_index_array.index(node_id.to_i)}" }
         lines << line
       #end
     end
 
-    grf_file_content = "0\n" << "#{not_empty_node_count}\t" << "#{relation_count}\n" << "0\t000" << lines
+    grf_file_content = "0\n" << "#{not_empty_node_count}\t" << "#{relation_count}\n" << "0\t010" << lines
     write_to_grf_file(grf_file_content)
 
     grf_file_content
