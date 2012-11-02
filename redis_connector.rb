@@ -174,7 +174,7 @@ module RedisModul
         #create_relation(rel_id, field_value_a)
         relid_fieldvalue_h[rel_id] = field_value_a
 
-        field_value_a = %W[#{rel_id} #{end_gid}]
+        field_value_a = %W[#{rel_id} #{end_gid}:#{visited}]
         #add_to_out_relations_of_node(start_gid, field_value_a)
         if out_gid_fieldvalue_h[start_gid]
           out_gid_fieldvalue_h[start_gid] += field_value_a
@@ -183,7 +183,7 @@ module RedisModul
         end
 
 
-        field_value_a = %W[#{rel_id} #{start_gid}]
+        field_value_a = %W[#{rel_id} #{start_gid}:#{visited}]
         #add_to_in_relations_of_node(end_gid, field_value_a)
         if in_gid_fieldvalue_h[end_gid]
           in_gid_fieldvalue_h[end_gid] += field_value_a
@@ -199,12 +199,12 @@ module RedisModul
     end
 
     def fill
-      puts "Started at: #{Time.now}"
+      @log.info "Started at: #{Time.now}"
       remove_all
       read_nodes_csv
       read_rels_csv
       ##rc.fetch_relations
-      puts "Finished at: #{Time.now}"
+      @log.info "Finished at: #{Time.now}"
     end
 
     def reset_global_id
