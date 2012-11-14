@@ -17,16 +17,18 @@ class CypherPartitioner
     lines = IO.readlines(Configuration::GID_PARTITION_H)
     lines.each do |line|
       tokens = line.chomp.split(",")
-      gid       = tokens[0]
-      partition = tokens[1]
+      gid       = tokens[0].to_i
+      partition = tokens[1].to_i
       gid_partition_h[gid] = partition
     end
+
+    gid_partition_h
   end
 
   def inject_partition_ports(mapping)
     @log.info("#{self.class.to_s}##{__method__.to_s} started")
     #0, 1'leri 7474 8474 gibi portlarla degistir
-    mapping.each_pair do |gid,partition|
+    mapping.each do |gid,partition|
       case partition
         when 0
           mapping[gid] = 6474
