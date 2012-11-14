@@ -5,7 +5,7 @@ class TezTesterRunner
 
   def initialize(thread_count)
     @logger ||= Logger.new(STDOUT)
-    @logger.level=Logger::INFO
+    @logger.level=Logger::DEBUG
 
     @logger_to_file ||= Logger.new("logv.txt")
     @logger_to_file.level=Logger::DEBUG
@@ -24,6 +24,35 @@ class TezTesterRunner
     @logger.info "Random gid for every thread"
     threaded_partitioning(nil, "partitioned") { |ht, gid, out_count| ht.analyze(gid, out_count) }
     threaded_partitioning(nil, "NONpartitioned") { |ht, gid, out_count| ht.execute_on_valid_partition(gid, out_count) }
+  end
+
+
+  def cypher_partitioning(gid, title_for_log, port)
+    start = Time.now
+    @result_h = {}
+
+    0.upto(@thread_count) { |i|
+      Thread.new do
+        ht = TezTester.new
+        @logger.debug "#{title_for_log} random gid: #{gid}"
+
+        result = ht.for_hubway(gid, port)
+        @logger.debug "#{title_for_log} results_from_partitioned.size = #{result.size}"
+
+        @result_h[Thread.current.inspect] = result
+      end
+
+      @logger.debug "#{title_for_log} #{i} started"
+    }
+
+    @logger.info "#{title_for_log} Waiting all threads to finish"
+
+    #Does not come to end while debuggin becuase of the debug thread. join(seconds_to_wait) could be used.
+    Thread.list.each { |t| t.join unless t == Thread.main or t == Thread.current }
+    @logger.info "#{title_for_log} All threads should have been finished"
+
+    @logger.debug "#{title_for_log} thread count: #{@result_h.size}"
+    @logger.info Time.now - start
   end
 
   private
@@ -70,8 +99,11 @@ class TezTesterRunner
   end
 end
 
-t = TezTesterRunner.new 2
-t.test_threaded_partitioning
+#t = TezTesterRunner.new 2
+#t.test_threaded_partitioning
+t = TezTesterRunner.new 400
+t.cypher_partitioning(1, "7474", 7474)
+t.cypher_partitioning(12, "8474", 8474)
 
 
 

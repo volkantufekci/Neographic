@@ -11,8 +11,9 @@ class TezTester
     @logger ||= Logger.new(STDOUT)
     @logger.level=Logger::INFO
 
-    @redis_dic = {:host => 'localhost', :port => 7379}  #test_port: 7379
-    @redis_connector = RedisModul::RedisConnector.new(@redis_dic)
+    #@redis_dic = {:host => 'localhost', :port => 7379}  #test_port: 7379
+    #@redis_connector = RedisModul::RedisConnector.new(@redis_dic)
+    #@redis_connector = RedisModul::RedisConnector.new
 
     @domain_map = Configuration::DOMAIN_MAP
   end
@@ -22,6 +23,11 @@ class TezTester
     configuration = "http://#{server}:#{port}/db/data/ext/GremlinPlugin/graphdb/execute_script"
 
     response = HTTParty.post(configuration, options)
+  end
+
+  def for_hubway(gid, port)
+    script = "g.v(#{gid}).in.out('BIKE').dedup()"
+    execute_script(script, "localhost", port).parsed_response
   end
 
   def analyze(gid, out_count)
