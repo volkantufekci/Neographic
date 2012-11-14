@@ -20,10 +20,11 @@ class CypherPartitionerTest < Test::Unit::TestCase
     # Do nothing
   end
 
-  # Fake test
   def test_read_partition_mapping
     mapping = @cypher_partition.read_partition_mapping
     assert(mapping.size > 0, "there is no line in the file")
+
+    assert(mapping[1].kind_of? 1.class)
   end
 
   def test_inject_partition_ports

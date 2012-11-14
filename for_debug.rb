@@ -1,25 +1,23 @@
 require_relative './partition_controller'
 require_relative './redis_connector'
 require_relative './gpart_controller'
+require_relative 'cypher_partitioner'
 
 start = Time.now
 puts "Started at: #{start}"
 
-max_node_idx        = 9
+max_node_idx        = 553000 #9
 total_neo4j_count   = 2
 
 
 rc                  = RedisModul::RedisConnector.new
 rc.fill
 gid_relidnei_h      = rc.fetch_relations max_node_idx
-gpc                 = GpartController.new(total_neo4j_count)
-gid_partition_h     = gpc.partition_and_return_mapping(gid_relidnei_h)
-
-#gpart_mapping   = gpc.read_gpart_result
-#gid_partition_h = gpc.inject_partition_ports(gpart_mapping)
-
-pc                  = Tez::PartitionController.new
-pc.generate_csvs(gid_partition_h, gid_relidnei_h)
+gid_partition_h     = CypherPartitioner.new.return_partition_mapping
+#gpc                 = GpartController.new(total_neo4j_count)
+#gid_partition_h     = gpc.partition_and_return_mapping(gid_relidnei_h)
+#
+Tez::PartitionController.new.generate_csvs(gid_partition_h, gid_relidnei_h)
 
 puts "Time elapsed: #{Time.now - start}"
 
