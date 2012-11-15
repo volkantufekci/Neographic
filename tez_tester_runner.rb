@@ -33,10 +33,10 @@ class TezTesterRunner
 
     0.upto(@thread_count) { |i|
       Thread.new do
-        ht = TezTester.new
+        tez_tester = TezTester.new
         @logger.debug "#{title_for_log} random gid: #{gid}"
 
-        result = ht.for_hubway(gid, port)
+        result = tez_tester.for_hubway(gid, port)
         @logger.debug "#{title_for_log} results_from_partitioned.size = #{result.size}"
 
         @result_h[Thread.current.inspect] = result
@@ -101,9 +101,11 @@ end
 
 #t = TezTesterRunner.new 2
 #t.test_threaded_partitioning
-t = TezTesterRunner.new 400
-t.cypher_partitioning(1, "7474", 7474)
-t.cypher_partitioning(12, "8474", 8474)
+t = TezTesterRunner.new 1
+#t.cypher_partitioning(1, "7474", 7474)
+args = ARGV
+hash = Hash[*args]
+t.cypher_partitioning(12, hash["port"], hash["port"])
 
 
 

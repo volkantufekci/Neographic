@@ -15,7 +15,13 @@ class TezTester
     #@redis_connector = RedisModul::RedisConnector.new(@redis_dic)
     #@redis_connector = RedisModul::RedisConnector.new
 
-    @domain_map = Configuration::DOMAIN_MAP
+    if ARGV.empty?
+      @domain_map = Configuration::DOMAIN_MAP
+    else
+      args = ARGV
+      @domain_map = Hash[*args]
+    end
+
   end
 
   def execute_script(script, server, port)
@@ -27,7 +33,7 @@ class TezTester
 
   def for_hubway(gid, port)
     script = "g.v(#{gid}).in.out('BIKE').dedup()"
-    execute_script(script, "localhost", port).parsed_response
+    execute_script(script, @domain_map[port], port).parsed_response
   end
 
   def analyze(gid, out_count)
