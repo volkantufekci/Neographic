@@ -107,14 +107,8 @@ class TezTesterRunner
   end
 end
 
-#t = TezTesterRunner.new 2
-#t.test_threaded_partitioning
 t = TezTesterRunner.new 1
-#t.cypher_partitioning(1, "7474", 7474)
-args = ARGV
-hash = Hash[*args]
-t.cypher_partitioning(12, hash["port"], hash["port"])
-
-
-
-
+#args = ARGV
+#hash = Hash[*args]
+#t.cypher_partitioning(12, hash["port"], hash["port"])
+t.cypher_partitioning(Configuration::GID, Configuration::PORT, Configuration::PORT)

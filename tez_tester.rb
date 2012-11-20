@@ -1,8 +1,8 @@
 require "httparty"
 require "json"
-require './partition_controller'
-require './redis_connector'
-require './configuration'
+#require './partition_controller'
+#require './redis_connector'
+require_relative 'configuration'
 
 class TezTester
   include HTTParty
@@ -15,12 +15,7 @@ class TezTester
     #@redis_connector = RedisModul::RedisConnector.new(@redis_dic)
     #@redis_connector = RedisModul::RedisConnector.new
 
-    if ARGV.empty?
-      @domain_map = Configuration::DOMAIN_MAP
-    else
-      args = ARGV
-      @domain_map = Hash[*args]
-    end
+    @domain_map = Configuration::DOMAIN_MAP
 
   end
 

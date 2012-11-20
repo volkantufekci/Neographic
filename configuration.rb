@@ -3,7 +3,7 @@ require "logger"
 class Configuration
 
   LOG_LEVEL = Logger::INFO
-  LOG_FILE  = Dir.home << "logv.txt"
+  LOG_FILE  = Dir.home << "/logv.txt"
 
   GPART_GRF_PATH      = Dir.home << "/hede.grf"
   GPART_RESULT_PATH   = Dir.home << "/result.map"
@@ -21,6 +21,9 @@ class Configuration
   HUBWAY_TRIPS_CSV    = Dir.home << "/hubway_original_csv_dir/trips.csv"
 
   GID_PARTITION_H     = Dir.home << "/gid_partition_h"
+
+  GID        = 12
+  PORT       = "8474"
 
   DOMAIN_MAP = {"6474" => "localhost",
                 "7474" => "localhost",
