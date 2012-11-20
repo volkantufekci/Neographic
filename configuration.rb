@@ -3,6 +3,7 @@ require "logger"
 class Configuration
 
   LOG_LEVEL = Logger::INFO
+  LOG_FILE  = Dir.home << "logv.txt"
 
   GPART_GRF_PATH      = Dir.home << "/hede.grf"
   GPART_RESULT_PATH   = Dir.home << "/result.map"

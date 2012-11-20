@@ -9,7 +9,7 @@ class TezTesterRunner
     @logger ||= Logger.new(STDOUT)
     @logger.level=Logger::INFO
 
-    @logger_to_file ||= Logger.new("logv.txt")
+    @logger_to_file ||= Logger.new(Configuration::LOG_FILE)
     @logger_to_file.level=Logger::DEBUG
 
     @thread_count = thread_count - 1
