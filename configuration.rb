@@ -7,6 +7,8 @@ class Configuration
   GPART_GRF_PATH      = Dir.home << "/hede.grf"
   GPART_RESULT_PATH   = Dir.home << "/result.map"
 
+  REDIS_URL           = "ec2-54-243-39-105.compute-1.amazonaws.com"
+
   #Unpartitioned, original one created at first via batch-importer
   NODES_CSV           = Dir.home << "/nodes.csv"
   RELS_CSV            = Dir.home << "/rels.csv"
