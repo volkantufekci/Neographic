@@ -1,16 +1,19 @@
-require './tez_tester'
+require "redis"
+require_relative 'tez_tester'
+require_relative 'configuration'
 
 class TezTesterRunner
   attr_accessor :result_h
 
   def initialize(thread_count)
     @logger ||= Logger.new(STDOUT)
-    @logger.level=Logger::DEBUG
+    @logger.level=Logger::INFO
 
     @logger_to_file ||= Logger.new("logv.txt")
     @logger_to_file.level=Logger::DEBUG
 
     @thread_count = thread_count - 1
+    @redis = Redis.new({:host => Configuration::REDIS_URL, :port => 6379})
   end
 
   def test_threaded_partitioning
@@ -36,20 +39,25 @@ class TezTesterRunner
         tez_tester = TezTester.new
         @logger.debug "#{title_for_log} random gid: #{gid}"
 
-        result = tez_tester.for_hubway(gid, port)
-        @logger.debug "#{title_for_log} results_from_partitioned.size = #{result.size}"
-
-        @result_h[Thread.current.inspect] = result
+        begin
+          result = tez_tester.for_hubway(gid, port)
+          @logger.info "#{title_for_log} results_from_partitioned.size = #{result.size}, Thread: #{i}"
+          @result_h[Thread.current.inspect] = result
+        rescue
+          @logger.debug "CAKILDI#Thread:#{i}"
+          ec2_instance_id = `wget -qO- instance-data/latest/meta-data/instance-id`
+          @redis.rpush("CAKILDI", ec2_instance_id)
+        end
       end
 
       @logger.debug "#{title_for_log} #{i} started"
     }
 
-    @logger.info "#{title_for_log} Waiting all threads to finish"
+    @logger.debug "#{title_for_log} Waiting all threads to finish"
 
     #Does not come to end while debuggin becuase of the debug thread. join(seconds_to_wait) could be used.
     Thread.list.each { |t| t.join unless t == Thread.main or t == Thread.current }
-    @logger.info "#{title_for_log} All threads should have been finished"
+    @logger.debug "#{title_for_log} All threads should have been finished"
 
     @logger.debug "#{title_for_log} thread count: #{@result_h.size}"
     @logger.info Time.now - start
