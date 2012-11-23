@@ -53,10 +53,10 @@ class TezTesterRunner
           result = tez_tester.for_hubway(gid, port)
           @logger.info "#{title_for_log} results_from_partitioned.size = #{result.size}, Thread: #{thread_idx}"
           @result_h[Thread.current.inspect] = result
-          @redis.rpush("CALISTI", ec2_instance_id << Time.now.to_s)
+          @redis.rpush("CALISTI", "#{ec2_instance_id} # #{Time.now}")
         rescue
           @logger.debug "CAKILDI#Thread:#{thread_idx}"
-          @redis.rpush("CAKILDI", ec2_instance_id << Time.now.to_s)
+          @redis.rpush("CAKILDI", "#{ec2_instance_id} # #{Time.now}")
         end
       end
 
