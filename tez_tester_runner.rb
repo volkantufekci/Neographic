@@ -35,9 +35,7 @@ class TezTesterRunner
     @result_h = {}
 
     if i_should_run?
-      #ec2_instance_id = `wget -qO- instance-data/latest/meta-data/instance-id`
-      ec2_instance_id = "asdf"
-
+      ec2_instance_id = `wget -qO- instance-data/latest/meta-data/instance-id`
       fire_gremlin_threads(ec2_instance_id, gid, port, title_for_log)
 
       @logger.debug "#{title_for_log} Waiting all threads to finish"
