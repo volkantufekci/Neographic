@@ -33,16 +33,26 @@ class TezTesterRunner
   def cypher_partitioning(gid, title_for_log, port)
     start = Time.now
     @result_h = {}
-    ec2_instance_id = `wget -qO- instance-data/latest/meta-data/instance-id`
 
-    fire_gremlin_threads(ec2_instance_id, gid, port, title_for_log)
+    if i_should_run?
+      #ec2_instance_id = `wget -qO- instance-data/latest/meta-data/instance-id`
+      ec2_instance_id = "asdf"
 
-    @logger.debug "#{title_for_log} Waiting all threads to finish"
-    #Does not come to end while debuggin becuase of the debug thread. join(seconds_to_wait) could be used.
-    Thread.list.each { |t| t.join unless t == Thread.main or t == Thread.current }
-    @logger.debug "#{title_for_log} All threads should have been finished, thread count: #{@result_h.size}"
+      fire_gremlin_threads(ec2_instance_id, gid, port, title_for_log)
 
-    @logger.info Time.now - start
+      @logger.debug "#{title_for_log} Waiting all threads to finish"
+      #Does not come to end while debuggin becuase of the debug thread. join(seconds_to_wait) could be used.
+      Thread.list.each { |t| t.join unless t == Thread.main or t == Thread.current }
+      @logger.debug "#{title_for_log} All threads should have been finished, thread count: #{@result_h.size}"
+
+      @logger.info Time.now - start
+    else
+      @logger.info "RUN value in REDIS is not 1"
+    end
+  end
+
+  def i_should_run?
+    result = @redis.get("RUN").eql? "1"
   end
 
   def fire_gremlin_threads(ec2_instance_id, gid, port, title_for_log)
