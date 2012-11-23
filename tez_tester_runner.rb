@@ -53,10 +53,10 @@ class TezTesterRunner
           result = tez_tester.for_hubway(gid, port)
           @logger.info "#{title_for_log} results_from_partitioned.size = #{result.size}, Thread: #{thread_idx}"
           @result_h[Thread.current.inspect] = result
-          @redis.rpush("CALISTI", "#{ec2_instance_id} # #{Time.now}")
+          @redis.rpush("CALISTI", "#{ec2_instance_id} # Thread: #{thread_idx} # #{Time.now}")
         rescue
           @logger.debug "CAKILDI#Thread:#{thread_idx}"
-          @redis.rpush("CAKILDI", "#{ec2_instance_id} # #{Time.now}")
+          @redis.rpush("CAKILDI", "#{ec2_instance_id} # Thread: #{thread_idx} # #{Time.now}")
         end
       end
 
@@ -108,7 +108,7 @@ class TezTesterRunner
   end
 end
 
-t = TezTesterRunner.new 1
+t = TezTesterRunner.new Configuration::THREAD_COUNT
 #args = ARGV
 #hash = Hash[*args]
 #t.cypher_partitioning(12, hash["port"], hash["port"])

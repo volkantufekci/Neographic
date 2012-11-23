@@ -22,8 +22,9 @@ class Configuration
 
   GID_PARTITION_H     = Dir.home << "/gid_partition_h"
 
-  GID        = 12
-  PORT       = "8474"
+  GID           = 12
+  PORT          = "8474"
+  THREAD_COUNT  = 10
 
   DOMAIN_MAP = {"6474" => "localhost",
                 "7474" => "localhost",
