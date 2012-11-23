@@ -6,11 +6,11 @@ class TezTesterRunner
   attr_accessor :result_h
 
   def initialize(thread_count)
-    @logger ||= Logger.new(STDOUT)
-    @logger.level=Logger::INFO
+    @logger             ||= Logger.new(STDOUT)
+    @logger.level         = Logger::INFO
 
-    @logger_to_file ||= Logger.new(Configuration::LOG_FILE)
-    @logger_to_file.level=Logger::DEBUG
+    @logger_to_file     ||= Logger.new(Configuration::LOG_FILE)
+    @logger_to_file.level = Logger::DEBUG
 
     @thread_count = thread_count - 1
     @redis = Redis.new({:host => Configuration::REDIS_URL, :port => 6379})
@@ -33,34 +33,35 @@ class TezTesterRunner
   def cypher_partitioning(gid, title_for_log, port)
     start = Time.now
     @result_h = {}
+    ec2_instance_id = `wget -qO- instance-data/latest/meta-data/instance-id`
 
-    0.upto(@thread_count) { |i|
+    fire_gremlin_threads(ec2_instance_id, gid, port, title_for_log)
+
+    @logger.debug "#{title_for_log} Waiting all threads to finish"
+    #Does not come to end while debuggin becuase of the debug thread. join(seconds_to_wait) could be used.
+    Thread.list.each { |t| t.join unless t == Thread.main or t == Thread.current }
+    @logger.debug "#{title_for_log} All threads should have been finished, thread count: #{@result_h.size}"
+
+    @logger.info Time.now - start
+  end
+
+  def fire_gremlin_threads(ec2_instance_id, gid, port, title_for_log)
+    0.upto(@thread_count) { |thread_idx|
       Thread.new do
         tez_tester = TezTester.new
-        @logger.debug "#{title_for_log} random gid: #{gid}"
-
         begin
           result = tez_tester.for_hubway(gid, port)
-          @logger.info "#{title_for_log} results_from_partitioned.size = #{result.size}, Thread: #{i}"
+          @logger.info "#{title_for_log} results_from_partitioned.size = #{result.size}, Thread: #{thread_idx}"
           @result_h[Thread.current.inspect] = result
+          @redis.rpush("CALISTI", ec2_instance_id << Time.now)
         rescue
-          @logger.debug "CAKILDI#Thread:#{i}"
-          ec2_instance_id = `wget -qO- instance-data/latest/meta-data/instance-id`
-          @redis.rpush("CAKILDI", ec2_instance_id)
+          @logger.debug "CAKILDI#Thread:#{thread_idx}"
+          @redis.rpush("CAKILDI", ec2_instance_id << Time.now)
         end
       end
 
-      @logger.debug "#{title_for_log} #{i} started"
+      @logger.debug "#{title_for_log} #{thread_idx} started"
     }
-
-    @logger.debug "#{title_for_log} Waiting all threads to finish"
-
-    #Does not come to end while debuggin becuase of the debug thread. join(seconds_to_wait) could be used.
-    Thread.list.each { |t| t.join unless t == Thread.main or t == Thread.current }
-    @logger.debug "#{title_for_log} All threads should have been finished"
-
-    @logger.debug "#{title_for_log} thread count: #{@result_h.size}"
-    @logger.info Time.now - start
   end
 
   private
