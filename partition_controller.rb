@@ -67,18 +67,18 @@ module Tez
         end
 
         gid_relidnei_h  = nil
-        gid_partition_h = nil
+        #gid_partition_h = nil
         @log.info("shadows and reals are separated into their partition hashes[#{__method__.to_s} ]")
 
         partition_gids_h.each { |partition, gids|
           @log.info("Building node lines for #{partition} started")
-          lines = "Gid\t__type__\tName\tShadow:boolean\n"
+          lines = "Gid\t__type__\tName\tShadow:boolean\tReal\n"
           self.write_to_file(partition, lines, "nodes.csv")
-          build_node_csv_lines(gids, partition, false)
+          build_node_csv_lines(gids, partition, gid_partition_h, false)
 
           @log.info("Building shadow node lines for #{partition} started")
           shadow_gids = shadow_partition_gids_h[partition].uniq
-          build_node_csv_lines(gids.length, shadow_gids, partition, true)
+          build_node_csv_lines(gids.length, shadow_gids, partition, gid_partition_h, true)
 
           @log.info("Building rel lines for #{partition} started")
           lines    = "Start\tEnde\tType\tVisited\n"
@@ -104,7 +104,7 @@ module Tez
         end
       end
 
-      def build_node_csv_lines(neo_id = 0, gids, partition, are_shadows)
+      def build_node_csv_lines(neo_id = 0, gids, partition, gid_partition_h, are_shadows)
         @log.info("#{__method__.to_s} started[#{self.class.to_s}]")
 
         max_idx = gids.length - 1
@@ -119,7 +119,7 @@ module Tez
             #line = "#{neo_id}"
             line = "#{gid}"
             props.values.each { |value| line << "\t#{value}" }
-            line << "\t#{are_shadows}\n"
+            line << "\t#{are_shadows}\t#{gid_partition_h[gid]}\n"
             lines << line
             neo_id += 1                 #increment before, because neo_id=0 is reference node.
             @gid_neoid_h[gid] = neo_id
