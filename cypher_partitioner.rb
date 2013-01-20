@@ -25,6 +25,8 @@ class CypherPartitioner
     gid_partition_h
   end
 
+  #TODO Bu metod cok gereksiz, ya read_partition_mapping'te cagrilmali ki tekrar tum hash'i gezme adimi olmasin
+  #ya da kulliyen java tarafinda Cypher ile olusturulurken 0, 1 yerine 6474, 7474 seklinde yazilmali
   def inject_partition_ports(mapping)
     @log.info("#{self.class.to_s}##{__method__.to_s} started")
     #0, 1'leri 7474 8474 gibi portlarla degistir
