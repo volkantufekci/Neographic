@@ -72,8 +72,10 @@ module Tez
 
         partition_gids_h.each { |partition, gids|
           @log.info("Building node lines for #{partition} started")
-          lines = "Gid\t__type__\tName\tShadow:boolean\tReal\n"
+          lines = "Gid\t__type__\tName\tShadow:boolean\tPort\n"
           self.write_to_file(partition, lines, "nodes.csv")
+          lines = "id\tGid\tName\n"
+          self.write_to_file(partition, lines, "nodes_index.csv")
           build_node_csv_lines(gids, partition, gid_partition_h, false)
 
           @log.info("Building shadow node lines for #{partition} started")
@@ -112,19 +114,21 @@ module Tez
         while lower <= max_idx
           temp_gids = gids[lower..upper]
 
-          lines = ""
+          lines, index_lines = "", ""
           #fetch node properties
           gid_props_h = @redis_connector.fetch_values_for(:node, temp_gids)
           gid_props_h.each { |gid, props|
-            #line = "#{neo_id}"
+            neo_id += 1                 #increment before, because neo_id=0 is reference node.
+            @gid_neoid_h[gid] = neo_id
             line = "#{gid}"
             props.values.each { |value| line << "\t#{value}" }
             line << "\t#{are_shadows}\t#{gid_partition_h[gid]}\n"
             lines << line
-            neo_id += 1                 #increment before, because neo_id=0 is reference node.
-            @gid_neoid_h[gid] = neo_id
+            index_line = "#{neo_id}\t#{gid}\t#{props["name"]}\n"
+            index_lines << index_line
           }
           self.append_to_file(partition, lines, "nodes.csv")
+          self.append_to_file(partition, index_lines, "nodes_index.csv")
 
           lower += interval
           upper += interval
