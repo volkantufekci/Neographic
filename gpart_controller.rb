@@ -18,7 +18,8 @@ class GpartController
   def perform_gparting
     @log.info("#{self.class.to_s}##{__method__.to_s} started")
     neo4j_count = @total_neo4j_count
-    `gpart #{neo4j_count} #{Configuration::GPART_GRF_PATH} #{Configuration::GPART_RESULT_PATH} -b0.9`
+    #`gpart #{neo4j_count} #{Configuration::GPART_GRF_PATH} #{Configuration::GPART_RESULT_PATH} -b0.9`
+    `gpart #{neo4j_count} #{Configuration::GPART_GRF_PATH} #{Configuration::GPART_RESULT_PATH}`
     gpart_mapping = read_gpart_result
     gpart_mapping = inject_partition_ports(gpart_mapping)
     #should return sth like {1=>7474, 2=>6474, 3=>7474, ...}
@@ -84,11 +85,30 @@ class GpartController
         when 0
           gpart_mapping[key] = 6474
         when 1
-          gpart_mapping[key] = 7474
+          gpart_mapping[key] = 6475
         when 2
-          gpart_mapping[key] = 8474
-        else
-          gpart_mapping[key] = 9474
+          gpart_mapping[key] = 6476
+        when 3
+          gpart_mapping[key] = 6477
+        when 4
+          gpart_mapping[key] = 6478
+        when 5
+          gpart_mapping[key] = 6479
+        when 6
+          gpart_mapping[key] = 6480
+        when 7
+          gpart_mapping[key] = 6481
+        when 8
+          gpart_mapping[key] = 6482
+        when 9
+          gpart_mapping[key] = 6483
+
+        #when 1
+        #  gpart_mapping[key] = 7474
+        #when 2
+        #  gpart_mapping[key] = 8474
+        #else
+        #  gpart_mapping[key] = 9474
       end
     end
     gpart_mapping
