@@ -14,8 +14,7 @@ class CypherPartitioner
   def read_partition_mapping
     gid_partition_h = {}
 
-    lines = IO.readlines(Configuration::GID_PARTITION_H)
-    lines.each do |line|
+    File.open(Configuration::GID_PARTITION_H, "r").each_line do |line|
       tokens = line.chomp.split(",")
       gid       = tokens[0].to_i
       partition = tokens[1].to_i

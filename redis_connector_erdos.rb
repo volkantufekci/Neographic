@@ -6,10 +6,13 @@ module RedisModul
     def read_nodes_csv
       @log.info("#{self.class.to_s}##{__method__.to_s} started")
       i = 0
+      is_header_line = true
       gid_fieldvalue_h = {}
-      lines = IO.readlines(Configuration::NODES_CSV)
-      lines.delete_at(0) #first row is column headers
-      lines.each { |line|
+      File.open(Configuration::NODES_CSV, "r").each_line do |line|
+        if is_header_line
+          is_header_line = false
+          next
+        end
         i += 1
         if i % 10000 == 0
           create_node(gid_fieldvalue_h)
@@ -21,7 +24,7 @@ module RedisModul
         gid = tokens[1]
         field_value_a = %W[name #{tokens[0]}]
         gid_fieldvalue_h[gid] = field_value_a
-      }
+      end
 
       create_node(gid_fieldvalue_h)
     end

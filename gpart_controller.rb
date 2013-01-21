@@ -28,12 +28,12 @@ class GpartController
   def read_gpart_result
     @log.info("#{self.class.to_s}##{__method__.to_s} started")
     gpart_result_h = Hash.new
-    lines = IO.readlines(Configuration::GPART_RESULT_PATH)
-    lines.each{ |line|
+
+    File.open(Configuration::GPART_RESULT_PATH, "r").each_line do |line|
       if line.split(/\t/).length == 2     ####To skip the first line
         gpart_result_h[line.split(/\t/).first.to_i]=line.split(/\t/).last.split(/\n/).first.to_i
       end
-    }
+    end
 
     gpart_result_h
   end
@@ -103,6 +103,8 @@ class GpartController
           gpart_mapping[key] = 6482
         when 9
           gpart_mapping[key] = 6483
+        else
+          gpart_mapping[key] = 9474
 
         #when 1
         #  gpart_mapping[key] = 7474

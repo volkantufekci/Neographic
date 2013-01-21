@@ -16,9 +16,8 @@ class HubwayCSVParser
 
   def read_stations_csv
     stations = {}
-    lines = IO.readlines(Configuration::HUBWAY_STATIONS_CSV)
     is_first_line = true
-    lines.each{ |line|
+    File.open(Configuration::HUBWAY_STATIONS_CSV, "r").each_line do |line|
       if is_first_line #To skip the first line
         is_first_line = false
         next
@@ -33,7 +32,7 @@ class HubwayCSVParser
       station["terminalName"] = terminal_name
       station["name"] = name
       stations[station_id] = station
-    }
+    end
 
     stations.each { |station_id, station|
       puts "#{station_id}\t#{station["terminalName"]}\t#{station["name"]}"
