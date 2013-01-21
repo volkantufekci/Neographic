@@ -1,4 +1,4 @@
-require_relative './partition_controller'
+require_relative './partition_controller_erdos'
 require_relative './redis_connector'
 require_relative './redis_connector_erdos'
 require_relative './gpart_controller'
@@ -21,7 +21,7 @@ gid_relidnei_h      = rc.fetch_relations max_node_idx
 gpc                 = GpartControllerUnweighted.new(total_neo4j_count)
 gid_partition_h     = gpc.partition_and_return_mapping(gid_relidnei_h)
 #
-Tez::PartitionController.new.generate_csvs(gid_partition_h, gid_relidnei_h)
+Tez::PartitionControllerErdos.new.generate_csvs(gid_partition_h, gid_relidnei_h)
 
 puts "Time elapsed: #{Time.now - start}"
 
