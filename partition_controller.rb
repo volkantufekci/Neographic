@@ -63,7 +63,8 @@ module Tez
 
           #node_neis.each shadow olanlari shadow_gid_partition_h'a ekle
           relid_nei_h = gid_relidnei_h[gid]
-          relid_nei_h.values.each { |nei_visited| collect_shadows(nei_visited, partition, gid_partition_h, shadow_partition_gids_h) }
+          #relid_nei_h.values.each { |nei_visited| collect_shadows(nei_visited, partition, gid_partition_h, shadow_partition_gids_h) }
+          relid_nei_h.each_value { |nei_visited| collect_shadows(nei_visited, partition, gid_partition_h, shadow_partition_gids_h) }
         end
 
         gid_relidnei_h  = nil
@@ -121,7 +122,8 @@ module Tez
             neo_id += 1                 #increment before, because neo_id=0 is reference node.
             @gid_neoid_h[gid] = neo_id
             line = "#{gid}"
-            props.values.each { |value| line << "\t#{value}" }
+            #props.values.each { |value| line << "\t#{value}" }
+            props.each_value { |value| line << "\t#{value}" }
             line << "\t#{are_shadows}\t#{gid_partition_h[gid]}\n"
             lines << line
             index_line = "#{neo_id}\t#{gid}\t#{props["name"]}\n"
@@ -149,7 +151,8 @@ module Tez
           lines = ""
           #fetch rel properties
           rel_props_h = @redis_connector.fetch_values_for(:rel, temp_relids)
-          rel_props_h.values.each { |props|
+          #rel_props_h.values.each { |props|
+          rel_props_h.each_value { |props|
             ende = @gid_neoid_h[props["Ende"].to_i] # If gid is a shadow its rel may not be in this partition
             if ende
               line = ""
@@ -177,10 +180,11 @@ module Tez
 
       def collect_relids(all_gids)
         gid_relidgid_h = @redis_connector.fetch_values_for(:out, all_gids)
-        relid_gid_h_a = gid_relidgid_h.values
-        gid_relidgid_h = nil
+        #relid_gid_h_a = gid_relidgid_h.values
+        #gid_relidgid_h = nil
         rel_ids = []
-        relid_gid_h_a.each { |relid_gid_h| rel_ids << relid_gid_h.keys }
+        #relid_gid_h_a.each { |relid_gid_h| rel_ids << relid_gid_h.keys }
+        gid_relidgid_h.each_value { |relid_gid_h| rel_ids << relid_gid_h.keys }
         rel_ids.flatten!
         rel_ids
       end

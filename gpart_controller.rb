@@ -41,16 +41,17 @@ class GpartController
   # values of a hash like {1=>[2, 3], 2=>[1, 3, 4, 5]} must be passed
   def build_grf_file(gid_relidnei_h)
     @log.info("#{self.class.to_s}##{__method__.to_s} started")
-    relid_nei_h_array = gid_relidnei_h.values
+    #relid_nei_h_array = gid_relidnei_h.values
 
     lines = ""
     relation_count = not_empty_node_count = 0
 
-    relid_nei_h_array.each do |relid_nei_h|
-      #unless neighbours.nil? || neighbours.empty?
+    #relid_nei_h_array.each do |relid_nei_h|
+    gid_relidnei_h.each_value do |relid_nei_h|
       #  neighbours = relid_nei_h.values.uniq
         neighbours = Hash.new
-        relid_nei_h.values.each do |neiid_visited|
+        #relid_nei_h.values.each do |neiid_visited|
+        relid_nei_h.each_value do |neiid_visited|
           splitted  = neiid_visited.split(":")
           neiid     = splitted.first
           visited   = splitted.last
