@@ -5,24 +5,24 @@ class Configuration
   home_dir  = Dir.home
 
   LOG_LEVEL = Logger::INFO
-  LOG_FILE  = home_dir << "/logv.txt"
+  LOG_FILE  = home_dir + "/logv.txt"
 
-  GPART_GRF_PATH      = home_dir << "/hede.grf"
-  GPART_RESULT_PATH   = home_dir << "/result.map"
+  GPART_GRF_PATH      = home_dir + "/hede.grf"
+  GPART_RESULT_PATH   = home_dir + "/result.map"
 
   REDIS_URL           = "ec2-54-243-39-105.compute-1.amazonaws.com"
 
   #Unpartitioned, original one created at first via batch-importer
-  NODES_CSV           = home_dir << "/nodes.csv"
-  RELS_CSV            = home_dir << "/rels.csv"
+  NODES_CSV           = home_dir + "/nodes.csv"
+  RELS_CSV            = home_dir + "/rels.csv"
 
-  PARTITIONED_CSV_DIR = home_dir << "/partitioned_csv_dir"
+  PARTITIONED_CSV_DIR = home_dir + "/partitioned_csv_dir"
 
   #Hubway
-  HUBWAY_STATIONS_CSV = home_dir << "/hubway_original_csv_dir/stations.csv"
-  HUBWAY_TRIPS_CSV    = home_dir << "/hubway_original_csv_dir/trips.csv"
+  HUBWAY_STATIONS_CSV = home_dir + "/hubway_original_csv_dir/stations.csv"
+  HUBWAY_TRIPS_CSV    = home_dir + "/hubway_original_csv_dir/trips.csv"
 
-  GID_PARTITION_H     = home_dir << "/gid_partition_h"
+  GID_PARTITION_H     = home_dir + "/gid_partition_h"
 
   GID           = 12
   PORT          = "8474"
