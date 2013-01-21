@@ -1,6 +1,7 @@
 require 'rubygems'
 require 'neography'
 require 'neography/node'
+require 'set'
 require_relative './redis_connector'
 require_relative './partition'
 require_relative 'node_controller'
@@ -52,26 +53,18 @@ module Tez
 
       def generate_csvs(gid_partition_h, gid_relidnei_h)
         @log.info("#{__method__.to_s} started[#{self.class.to_s}]")
-        shadow_partition_gids_h, partition_gids_h = {}, {}
+        #shadow_partition_gids_h, partition_gids_h = {}, {}
+        partitions = Set.new
 
-        gid_partition_h.each do |gid, partition|
-          if partition_gids_h[partition]
-            partition_gids_h[partition] << gid
-          else
-            partition_gids_h[partition] = [gid]
-          end
+        gid_partition_h.each_value { |partition| partitions.add(partition) }
+        partitions.each do |partition|
+          gids = []
+          gid_partition_h.each { |k, v| gids << k if v == partition }
 
-          #node_neis.each shadow olanlari shadow_gid_partition_h'a ekle
+          shadow_partition_gids_h = {}
           relid_nei_h = gid_relidnei_h[gid]
-          #relid_nei_h.values.each { |nei_visited| collect_shadows(nei_visited, partition, gid_partition_h, shadow_partition_gids_h) }
           relid_nei_h.each_value { |nei_visited| collect_shadows(nei_visited, partition, gid_partition_h, shadow_partition_gids_h) }
-        end
 
-        gid_relidnei_h  = nil
-        #gid_partition_h = nil
-        @log.info("shadows and reals are separated into their partition hashes[#{__method__.to_s} ]")
-
-        partition_gids_h.each { |partition, gids|
           @log.info("Building node lines for #{partition} started")
           lines = "Gid\t__type__\tName\tShadow:boolean\tPort\n"
           self.write_to_file(partition, lines, "nodes.csv")
@@ -88,14 +81,51 @@ module Tez
           self.write_to_file(partition, lines, "rels.csv")
           all_gids = gids + shadow_gids
           build_rels_csv_lines(all_gids, partition)
+        end
 
-        }
+        #gid_partition_h.each do |gid, partition|
+        #  if partition_gids_h[partition]
+        #    partition_gids_h[partition] << gid
+        #  else
+        #    partition_gids_h[partition] = [gid]
+        #  end
+        #
+        #  #node_neis.each shadow olanlari shadow_gid_partition_h'a ekle
+        #  relid_nei_h = gid_relidnei_h[gid]
+        #  #relid_nei_h.values.each { |nei_visited| collect_shadows(nei_visited, partition, gid_partition_h, shadow_partition_gids_h) }
+        #  relid_nei_h.each_value { |nei_visited| collect_shadows(nei_visited, partition, gid_partition_h, shadow_partition_gids_h) }
+        #end
+        #
+        #gid_relidnei_h  = nil
+        ##gid_partition_h = nil
+        #@log.info("shadows and reals are separated into their partition hashes[#{__method__.to_s} ]")
+        #
+        #partition_gids_h.each { |partition, gids|
+        #  @log.info("Building node lines for #{partition} started")
+        #  lines = "Gid\t__type__\tName\tShadow:boolean\tPort\n"
+        #  self.write_to_file(partition, lines, "nodes.csv")
+        #  lines = "id\tGid\tName\n"
+        #  self.write_to_file(partition, lines, "nodes_index.csv")
+        #  build_node_csv_lines(gids, partition, gid_partition_h, false)
+        #
+        #  @log.info("Building shadow node lines for #{partition} started")
+        #  shadow_gids = shadow_partition_gids_h[partition].uniq
+        #  build_node_csv_lines(gids.length, shadow_gids, partition, gid_partition_h, true)
+        #
+        #  @log.info("Building rel lines for #{partition} started")
+        #  lines    = "Start\tEnde\tType\tVisited\n"
+        #  self.write_to_file(partition, lines, "rels.csv")
+        #  all_gids = gids + shadow_gids
+        #  build_rels_csv_lines(all_gids, partition)
+        #
+        #}
 
       end
 
       def collect_shadows(nei_visited, partition, gid_partition_h, shadow_partition_gids_h)
-        nei = nei_visited.split(":").first
-        nei = nei.to_i
+        #nei = nei_visited.split(":").first
+        #nei = nei.to_i
+        nei = nei_visited.to_i
         if gid_partition_h[nei] == partition
           #nei de ayni part'ta, bir sey yapmaya gerek yok
         else
