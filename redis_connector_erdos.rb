@@ -29,11 +29,17 @@ module RedisModul
       create_node(gid_fieldvalue_h)
     end
 
-    def process_lines_for_rels(lines)
+    def read_rels_csv
       @log.info("#{self.class.to_s}##{__method__.to_s} started")
+
       relid_fieldvalue_h, out_gid_fieldvalue_h, in_gid_fieldvalue_h = {}, {}, {}
       i = 0
-      lines.each { |line|
+      is_header_line = true
+      File.open(Configuration::RELS_CSV, "r").each_line do |line|
+        if is_header_line
+          is_header_line = false
+          next
+        end
         i += 1
         if i % 10000 == 0
           @log.info "#{i}. relation created" if i % 1000000 == 0
@@ -81,7 +87,7 @@ module RedisModul
           in_gid_fieldvalue_h[end_gid] = field_value_a
         end
 
-      }
+      end
 
       create_relation("rel:", relid_fieldvalue_h)   unless relid_fieldvalue_h.empty?
       create_relation("out:", out_gid_fieldvalue_h) unless out_gid_fieldvalue_h.empty?
