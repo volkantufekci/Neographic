@@ -1,0 +1,35 @@
+ami_id=ami-5f7cfa36
+region=us-east-1    
+zone=${region}a     
+export EC2_URL=https://$region.ec2.amazonaws.com
+export AWS_AUTO_SCALING_URL=https://autoscaling.$region.amazonaws.com
+launch_config=tez-launch-config
+auto_scale_group=tez-auto-scale-group
+
+
+
+as-create-launch-config --key tezExclusiveKart20121112 --instance-type t1.micro   --user-data-file sh.sh   --image-id $ami_id   --launch-config "$launch_config" --spot-price "0.003"
+
+as-create-auto-scaling-group   --auto-scaling-group "$auto_scale_group"   --launch-configuration "$launch_config"   --availability-zones "$zone"   --min-size 100   --max-size 100
+
+as-suspend-processes   "$auto_scale_group"   --processes ReplaceUnhealthy
+
+as-put-scheduled-update-group-action   --name "demo-schedule-start"   --auto-scaling-group "$auto_scale_group"   --min-size 1   --max-size 1   --recurrence "13 15 * * *"
+
+as-put-scheduled-update-group-action   --name "demo-schedule-stop"   --auto-scaling-group "$auto_scale_group"   --min-size 0   --max-size 0   --recurrence "18 15 * * *"
+
+
+HEADERS
+as-describe-launch-configs --headers
+as-describe-scaling-activities --auto-scaling-group "$auto_scale_group" --headers
+as-describe-auto-scaling-instances --headers
+
+
+DELETE
+as-delete-launch-config   --force   --launch-config "$launch_config"
+as-update-auto-scaling-group   "$auto_scale_group"   --min-size 0   --max-size 0
+as-delete-auto-scaling-group "$auto_scale_group" --force-delete                          (spot requestleri de iptal ediyor)
+
+
+
+/home/ubuntu/redis-2.6.4/src/redis-server
