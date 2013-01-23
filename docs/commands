@@ -1,0 +1,3 @@
+java -server -Xmx4G -jar ~/batch-import-jar-with-dependencies.jar deneme.201301151430.graph.db nodes.csv rels.csv
+
+
