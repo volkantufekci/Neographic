@@ -9,6 +9,8 @@ module Tez
 
       gid_partition_h.each_value { |partition| partitions.add(partition) }
       partitions.each do |partition|
+        @gid_neoid_h.clear
+
         gids = []
         gid_partition_h.each { |k, v| gids << k if v == partition }
 
@@ -20,11 +22,10 @@ module Tez
           }
         end
 
-
         @log.info("Building node lines for #{partition} started")
-        lines = "Gid\t__type__\tName\tShadow:boolean\tPort\n"
+        lines = "gid\tname\tshadow:boolean\tport\n"
         self.write_to_file(partition, lines, "nodes.csv")
-        lines = "id\tGid\tName\n"
+        lines = "id\tgid\tname\n"
         self.write_to_file(partition, lines, "nodes_index.csv")
         build_node_csv_lines(gids, partition, gid_partition_h, false)
 
