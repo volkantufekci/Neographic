@@ -2,7 +2,8 @@ require "logger"
 
 class Configuration
 
-  home_dir  = Dir.home
+  #home_dir  = Dir.home
+  home_dir  = "/home/ubuntu"
 
   LOG_LEVEL = Logger::INFO
   LOG_FILE  = home_dir + "/logv.txt"
