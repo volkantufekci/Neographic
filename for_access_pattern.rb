@@ -6,7 +6,7 @@ puts "Started at: #{start}"
 max_node_idx        = 1850065 #553000 #9
 
 rc                  = RedisModul::RedisConnectorErdos.new
-rc.fill
+#rc.fill
 
 gid_relidnei_h      = rc.fetch_relations max_node_idx
 gid_partition_h     = read_partition_mapping()
