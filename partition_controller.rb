@@ -1,11 +1,9 @@
 require 'rubygems'
-require 'neography'
-require 'neography/node'
 require 'set'
 require_relative './redis_connector'
-require_relative './partition'
-require_relative 'node_controller'
-require_relative 'relation_controller'
+#require_relative './partition'
+#require_relative 'node_controller'
+#require_relative 'relation_controller'
 require_relative 'configuration'
 
 module Tez
