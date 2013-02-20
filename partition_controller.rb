@@ -74,9 +74,9 @@ module Tez
 
         partition_gids_h.each { |partition, gids|
           @log.info("Building node lines for #{partition} started")
-          lines = "Gid\t__type__\tName\tShadow:boolean\tPort\n"
+          lines = "gid\t__type__\tname\tshadow:boolean\tport\n"
           self.write_to_file(partition, lines, "nodes.csv")
-          lines = "id\tGid\tName\n"
+          lines = "id\tgid\tname\n"
           self.write_to_file(partition, lines, "nodes_index.csv")
           build_node_csv_lines(gids, partition, gid_partition_h, false)
 
