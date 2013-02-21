@@ -18,7 +18,7 @@ class GpartController
   def perform_gparting
     @log.info("#{self.class.to_s}##{__method__.to_s} started")
     neo4j_count = @total_neo4j_count
-    #`gpart #{neo4j_count} #{Configuration::GPART_GRF_PATH} #{Configuration::GPART_RESULT_PATH} -b0.9`
+    #`gpart #{neo4j_count} #{Configuration::GPART_GRF_PATH} #{Configuration::GPART_RESULT_PATH} -b0.9 -vmst`
     `gpart #{neo4j_count} #{Configuration::GPART_GRF_PATH} #{Configuration::GPART_RESULT_PATH}`
     gpart_mapping = read_gpart_result
     gpart_mapping = inject_partition_ports(gpart_mapping)
