@@ -24,7 +24,7 @@ class GpartControllerUnweighted < GpartController
       #end
     end
 
-    grf_file_content = "0\n" << "#{not_empty_node_count}\t" << "#{relation_count}\n" << "0\t000" << lines
+    grf_file_content = "0\n" << "#{not_empty_node_count}\t" << "#{relation_count}\n" << "1\t000" << lines
     write_to_grf_file(grf_file_content)
 
     grf_file_content
