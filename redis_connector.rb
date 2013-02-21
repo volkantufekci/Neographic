@@ -57,7 +57,7 @@ module RedisModul
       @log.info("#{self.class.to_s}##{__method__.to_s} started")
       gid_relidnei_h = {}
 
-      lower_bound, upper_bound = 0, 9999
+      lower_bound, upper_bound = 1, 10000
       interval = 10000
       while lower_bound <= max_node_count
         futures = {}
