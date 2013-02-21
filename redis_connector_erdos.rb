@@ -63,7 +63,7 @@ module RedisModul
         #rel_id        = counter
         #rel_id        = tokens[3]
         rel_id        = i
-        field_value_a = %W[Start #{start_gid} Ende #{end_gid} Type #{type} RelId ##{rel_id}]
+        field_value_a = %W[Start #{start_gid} Ende #{end_gid} Type #{type}]
 
         #create_relation(rel_id, field_value_a)
         relid_fieldvalue_h[rel_id] = field_value_a
