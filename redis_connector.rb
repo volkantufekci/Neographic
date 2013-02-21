@@ -57,7 +57,7 @@ module RedisModul
       @log.info("#{self.class.to_s}##{__method__.to_s} started")
       gid_relidnei_h = {}
 
-      lower_bound, upper_bound = 1, 10000
+      lower_bound, upper_bound = 0, 9999
       interval = 10000
       while lower_bound <= max_node_count
         futures = {}
@@ -87,7 +87,7 @@ module RedisModul
       raise "not suitable key_prefix=#{key_prefix} passed" unless [:node, :rel, :out, :in].include? key_prefix
       gid_values_h = {}
       max_idx     = gids.length - 1
-      lower_bound, upper_bound, interval = 1, 10000, 10000
+      lower_bound, upper_bound, interval = 0, 9999, 10000
 
       while lower_bound <= max_idx
         futures = {}
