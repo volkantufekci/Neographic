@@ -71,15 +71,15 @@ module Tez
         @log.info("shadows and reals are separated into their partition hashes[#{__method__.to_s} ]")
 
         partition_gids_h.each { |partition, gids|
-          @log.info("Building node lines for #{partition} started")
+          @log.info("Building #{gids.size} node lines for #{partition} started")
           lines = "gid\t__type__\tname\tshadow:boolean\tport\n"
           self.write_to_file(partition, lines, "nodes.csv")
           lines = "id\tgid\tname\n"
           self.write_to_file(partition, lines, "nodes_index.csv")
           build_node_csv_lines(gids, partition, gid_partition_h, false)
 
-          @log.info("Building shadow node lines for #{partition} started")
           shadow_gids = shadow_partition_gids_h[partition].uniq
+          @log.info("Building #{shadow_gids.size} shadow node lines for #{partition} started")
           build_node_csv_lines(gids.length, shadow_gids, partition, gid_partition_h, true)
 
           @log.info("Building rel lines for #{partition} started")
@@ -87,7 +87,6 @@ module Tez
           self.write_to_file(partition, lines, "rels.csv")
           all_gids = gids + shadow_gids
           build_rels_csv_lines(all_gids, partition)
-
         }
 
       end
