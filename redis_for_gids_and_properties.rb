@@ -17,6 +17,7 @@ module RedisModul
       @log.info("#{self.class.to_s}##{__method__.to_s} started")
 
       @redis.flushall
+      @log.info("redis flushed")
 
       i = 1
       temp_h = {}
