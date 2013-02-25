@@ -18,7 +18,7 @@ class Configuration
   NODES_CSV           = home_dir + "/nodes.csv"
   RELS_CSV            = home_dir + "/rels.csv"
 
-  PARTITIONED_CSV_DIR = home_dir + "/partitioned_csv_dir"
+  PARTITIONED_CSV_DIR = "/mnt/v/partitioned_csv_dir"
 
   #Hubway
   HUBWAY_STATIONS_CSV = home_dir + "/hubway_original_csv_dir/stations.csv"
