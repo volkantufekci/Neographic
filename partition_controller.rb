@@ -108,8 +108,6 @@ module Tez
       end
 
       def build_node_csv_lines(neo_id = 0, gids, partition, gid_partition_h, are_shadows)
-        @log.info("#{__method__.to_s} started[#{self.class.to_s}]")
-
         max_idx = gids.length - 1
         lower, upper, interval = 0, 9999, 10000
         while lower <= max_idx
@@ -139,8 +137,6 @@ module Tez
       end
 
       def build_rels_csv_lines(all_gids, partition)
-        @log.info("#{__method__.to_s} started[#{self.class.to_s}]")
-
         rel_ids = self.collect_relids(all_gids)
         max_idx = rel_ids.length - 1
         lower, upper, interval = 0, 9999, 10000
@@ -190,7 +186,6 @@ module Tez
       end
 
       def write_to_file(dir_name, to_the_file, file_name="nodes.csv")
-        @log.info("#{to_the_file} written to #{file_name} [#{self.class.to_s}##{__method__.to_s}]")
         csv_dir = Configuration::PARTITIONED_CSV_DIR
         Dir.mkdir(csv_dir) unless Dir.exists?(csv_dir)
         if Dir.exists?("#{csv_dir}/#{dir_name}")
