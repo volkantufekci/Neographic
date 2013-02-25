@@ -17,7 +17,7 @@ total_neo4j_count   = 10
 rc                  = RedisModul::RedisConnectorErdos.new
 
 #RubyProf.start
-rc.fill
+#rc.fill
 
 
 gid_relidnei_h      = rc.fetch_relations max_node_idx
