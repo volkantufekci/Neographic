@@ -30,8 +30,11 @@ module Tez
         build_node_csv_lines(gids, partition, gid_partition_h, false)
 
         @log.info("Building shadow node lines for #{partition} started")
-        shadow_gids = shadow_partition_gids_h[partition].uniq
-        build_node_csv_lines(gids.length, shadow_gids, partition, gid_partition_h, true)
+        shadow_gids = []
+        unless shadow_partition_gids_h[partition] == nil
+          shadow_gids = shadow_partition_gids_h[partition].uniq
+          build_node_csv_lines(gids.length, shadow_gids, partition, gid_partition_h, true)
+        end
 
         @log.info("Building rel lines for #{partition} started")
         lines    = "Start\tEnde\tType\n"
