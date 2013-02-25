@@ -35,19 +35,3 @@ Tez::PartitionControllerErdos.new.generate_csvs(gid_partition_h, gid_relidnei_h)
 #printer.print(file, :min_percent => 2)
 
 puts "Toplam sure: #{Time.now - start}"
-
-#partition = 7474
-#p "~/neo4j/#{partition}/bin/neo4j stop"
-#`~/neo4j/#{partition}/bin/neo4j stop`
-#
-#p "rm -r ~/neo4j/#{partition}/data/graph.db"
-#`rm -r ~/neo4j/#{partition}/data/graph.db`
-#
-#p "java -server -Xmx2G -jar ~/batch-import-jar-with-dependencies.jar ~/neo4j/#{partition}/data/graph.db ~/partitioned_csv_dir/#{partition}/nodes.csv ~/partitioned_csv_dir/#{partition}/rels.csv"
-#`java -server -Xmx2G -jar ~/batch-import-jar-with-dependencies.jar ~/neo4j/#{partition}/data/graph.db ~/partitioned_csv_dir/#{partition}/nodes.csv ~/partitioned_csv_dir/#{partition}/rels.csv`
-#
-#p "~/neo4j/#{partition}/bin/neo4j start"
-#`~/neo4j/#{partition}/bin/neo4j start`
-
-
-#jruby -J-Xmx3000m -w for_debug.rb
