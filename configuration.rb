@@ -11,7 +11,8 @@ class Configuration
   GPART_GRF_PATH      = home_dir + "/hede.grf"
   GPART_RESULT_PATH   = home_dir + "/result.map"
 
-  REDIS_URL           = "ec2-54-243-39-105.compute-1.amazonaws.com"
+  #Bu redis sadece gid-partition mappingi ve propertyleri tutuyor
+  REDIS_URL           = "10.211.35.120" #FREE'nin adresi
 
   #Unpartitioned, original one created at first via batch-importer
   NODES_CSV           = home_dir + "/nodes.csv"

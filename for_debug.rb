@@ -5,6 +5,7 @@ require_relative './redis_connector_erdos'
 require_relative './gpart_controller'
 require_relative './gpart_controller_unweighted'
 require_relative 'cypher_partitioner'
+require_relative './redis_for_gids_and_properties'
 
 start = Time.now
 puts "Started at: #{start}"
@@ -24,6 +25,7 @@ gid_relidnei_h      = rc.fetch_relations max_node_idx
 #gpc                 = GpartController.new(total_neo4j_count)
 gpc                 = GpartControllerUnweighted.new(total_neo4j_count)
 gid_partition_h     = gpc.partition_and_return_mapping(gid_relidnei_h)
+RedisModul::RedisForGidsAndProperties.new.put_partition_mapping_to_redis(gid_partition_h)
 #
 Tez::PartitionControllerErdos.new.generate_csvs(gid_partition_h, gid_relidnei_h)
 
