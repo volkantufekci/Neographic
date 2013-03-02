@@ -2,12 +2,15 @@ require_relative './partition_controller'
 
 module Tez
   class PartitionControllerErdos < PartitionController
-    def generate_csvs(gid_partition_h, gid_relidnei_h)
+    def generate_csvs(gid_partition_h, gid_relidnei_h, exclude_partition=-1)
       @log.info("#{__method__.to_s} started[#{self.class.to_s}]")
       #shadow_partition_gids_h, partition_gids_h = {}, {}
       partitions = Set.new
 
-      gid_partition_h.each_value { |partition| partitions.add(partition) }
+      gid_partition_h.each_value { |partition|
+        partitions.add(partition) unless partition == exclude_partition
+      }
+
       partitions.each do |partition|
         @gid_neoid_h.clear
 
