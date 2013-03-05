@@ -3,7 +3,7 @@ require_relative './partition_controller_erdos'
 
 class ForAccessPatternWOScotch
   def initialize
-    @max_node_idx   = 1850065 #553000 #9
+    @max_node_idx   = 1850022 #1850065 #553000 #9
     @rc             = RedisModul::RedisConnectorErdos.new
 
     @last_partition =6483
